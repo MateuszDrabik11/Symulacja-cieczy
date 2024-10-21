@@ -10,7 +10,7 @@ segment .text
 	global increment_array
 	global calc_density_and_pressure
 	global kernel_function
-	global distance_between_two_vectors
+	global distance_between_two_points
 
 temp:
 	mov rax, [rel alpha]
@@ -39,7 +39,7 @@ calc_density_and_pressure:
 ;0	a* double
 ;1	b* double
 ;out double
-distance_between_two_vectors:
+distance_between_two_points:
 	;lenght of a - b vector
 	;sqrt((a.x-b.x)^2+(a.y-b.y)^2)	
 	vmovupd ymm0,[rdi]	;a

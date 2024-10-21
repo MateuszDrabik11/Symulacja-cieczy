@@ -54,7 +54,7 @@ class Program
         parallel_loop();
         double[] a = [1,1,1];
         double[] b = [2,0,1];
-        Console.WriteLine(test(0.001));
+        Console.WriteLine(test(0.0001));
     }
 
     // Avalonia configuration, don't remove; also used by visual designer.
