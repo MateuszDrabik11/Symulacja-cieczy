@@ -19,7 +19,10 @@ record Particle
 class Program
 {
     [DllImport("../../../libasm.so", EntryPoint = "kernel_function")]
-    extern static double test(double a);
+    extern static void test(double[] a, double[] output);
+    
+    [DllImport("../../../libasm.so", EntryPoint = "distance_between_two_points")]
+    extern static double lenght(double[] a, double[] b);
 
     [DllImport("../../../libasm.so", EntryPoint = "increment_array")]
     extern static int add1(ref int a, int size);
@@ -53,8 +56,15 @@ class Program
         .StartWithClassicDesktopLifetime(args);
         parallel_loop();
         double[] a = [1,1,1];
-        double[] b = [2,0,1];
-        Console.WriteLine(test(0.0001));
+        double[] b = [2,32,1];
+        Console.WriteLine(lenght(a,b));
+        double[] c =[0.001,0.2,1.0,0.8];
+        double[] t = new double[4];
+        test(c,t);
+        foreach(double T in t)
+        {
+            Console.WriteLine(T);
+        }
     }
 
     // Avalonia configuration, don't remove; also used by visual designer.

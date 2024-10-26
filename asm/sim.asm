@@ -1,15 +1,20 @@
 segment .data	;constants
 alpha dq 0.31985	;1/pi
-h dq 0.001
+h dq 0.5
 zero_double dq 0.0
 one_double dq 1.0
 two_double dq 2.0
 three_two dq 1.5
 minus_one_two dq -0.5
+quarter dq 0.25
+three_four dq 0.75
+pi dq 3.1416
+quarter_pi dq 0.7854
 segment .text
 	global increment_array
 	global calc_density_and_pressure
 	global kernel_function
+	global kernel_function_derivative
 	global distance_between_two_points
 
 temp:
@@ -46,67 +51,71 @@ distance_between_two_points:
 	vmovupd ymm1,[rsi]	;b
 	vsubpd ymm0,ymm1	;a-b = c
 	vmulpd ymm0,ymm0	;c^2
-	vextractf128 xmm2, ymm0, 1 ;upper half of ymm0to xmm2
+	vextractf128 xmm2, ymm0, 1 ;upper half of ymm0 to xmm2
 	vaddpd xmm0, xmm0,xmm2	;xmm0 + xmm2 = xmm0
 	vhaddpd xmm0,xmm0,xmm0	;horizontal add of xmm0
 	vsqrtpd xmm0,xmm0		;sqrt(xmm0) = xmm0
 	ret
 
-;in xmm0 r
-;out xmm0 double
+;assumption r > 0
 kernel_function:
-	movsd xmm1,[rel h]
-	addsd xmm1,xmm1
-	ucomisd xmm0, xmm1	;compare xmm0 = r and xmm1 = 2*h
-	ja kf_return_zero
-	divsd xmm0,xmm1		;xmm0 = q = r/h
-	movsd xmm1,[rel two_double]
-	ucomisd xmm0,xmm1	;compare q and 2.0
-	ja kf_return_zero	;greater than 2
-	jb kf_compare_with_one	;less than 2
-kf_compare_with_one:
-	movsd xmm1,[rel one_double]
-	ucomisd xmm0,xmm1
-	ja kf_return_between_one_two	;greater than 1 less than 2
-	jb kf_compare_with_zero			;less than 1
-kf_compare_with_zero:
-	movsd xmm1,[rel zero_double]
-	ucomisd xmm0,xmm1
-	ja kf_return_between_zero_one	;less than 1 greater than 0
-	jb kf_return_zero				;less than 0
+	vmovupd ymm0, [rdi]             			; ymm0 = r
+	vbroadcastsd ymm1, [rel zero_double]		; ymm1 = 0
 
-kf_return_zero:
-	movsd xmm0,[rel zero_double]
-	ret
-kf_return_between_zero_one:
-	;xmm0 = q
-	movsd xmm1,[rel one_double]
-	movsd xmm2,xmm0
-	movsd xmm3,[rel three_two]
-	mulsd xmm2,xmm3
-	mulsd xmm2,xmm0
-	subsd xmm1,xmm2		;xmm1 = 1 - 3/2q^2
-	movsd xmm3,[rel minus_one_two]
-	mulsd xmm2,xmm3
-	addsd xmm1,xmm2		;xmm1 = 1 - 3/2q^2 + 3/4q^2
-	mulsd xmm1,xmm0		;xmm1 = 1 - 3/2q^2 + 3/4q^3
-	movsd xmm3,[rel alpha]
-	movsd xmm0,xmm3
-	movsd xmm3,[rel h]
-	divsd xmm0,xmm3
-	divsd xmm0,xmm3
-	divsd xmm0,xmm3
-	mulsd xmm0,xmm1
-	ret
+	vbroadcastsd ymm2, [rel h]      			; ymm2 = h
+	vaddpd ymm2, ymm2, ymm2         			; ymm2 = 2 * h
+	vcmppd ymm3, ymm0, ymm2, 1      			; ymm0 < ymm2 = ymm3, ymm3 = r < 2h
 
+	vbroadcastsd ymm2, [rel h]
+	vdivpd ymm1, ymm0, ymm2         			; ymm1 = q = r / h
 
-kf_return_between_one_two:
-	movsd xmm1,[rel two_double]
-	subsd xmm1,xmm0
-	mulsd xmm1,xmm1
-	mulsd xmm1,xmm1
-	mulsd xmm1,xmm1
-	divsd xmm1,[rel two_double]
-	divsd xmm1,[rel two_double]
-	movsd xmm0,xmm1
+	vmulpd ymm3, ymm2, ymm2         			; ymm2 = h^2
+	vmulpd ymm3, ymm3, ymm2      				; ymm2 = h^3
+	vbroadcastsd ymm2, [rel pi]
+	vmulpd ymm3, ymm3, ymm2						; ymm3 = pi * h^3 
+
+	; Condition 1: q <= 1 (calculate (1 - 1.5*q^2 + 0.75*q^3) * π / h^3)
+	vbroadcastsd ymm9 , [rel one_double]
+	vcmppd ymm6, ymm1, ymm9, 2 					; ymm6 = ymm1 <= ymm9, ymm6 = q <=1
+	vmulpd ymm2, ymm1, ymm1         			; ymm2 = q^2
+	vbroadcastsd ymm8, [rel three_two]
+	vmulpd ymm2, ymm2, ymm8     				; ymm3 = 1.5 * q^2
+	vbroadcastsd ymm5, [rel one_double]
+	vsubpd ymm2, ymm5, ymm2         			; ymm3 = 1 - 1.5 * q^2
+
+	vmulpd ymm4, ymm1, ymm1         			; ymm4 = q^2
+	vmulpd ymm4, ymm4, ymm1 					; ymm4 = q^3
+	vbroadcastsd ymm8, [rel three_four]
+	vmulpd ymm4, ymm4, ymm8						; ymm4 = 0.75 * q^3
+	vaddpd ymm2, ymm2, ymm4         			; ymm3 = 1 - 1.5*q^2 + 0.75*q^3
+
+	vdivpd ymm2, ymm2, ymm3         			; Final result for q <= 1: (1 - 1.5*q^2 + 0.75*q^3) /( π * h^3)
+
+	vblendvpd ymm6, ymm6, ymm2, ymm6 			; ymm6 = ymm2 if true else 0
+
+	; Condition 2: 1 < q <= 2 (calculate (0.25 * π * (2 - q)^3) / h^3)
+	vbroadcastsd ymm9, [rel two_double]
+	vcmppd ymm7, ymm1, ymm9, 2      			; ymm7 = q <= 2
+	vbroadcastsd ymm9, [rel one_double]
+	vcmppd ymm8, ymm9, ymm1, 1 				 	; ymm8 = q > 1
+	vandpd ymm7, ymm7, ymm8         			; ymm7 = 1 < q <= 2
+
+	vbroadcastsd ymm5, [rel two_double]
+	vsubpd ymm1, ymm5, ymm1         			; ymm1 = (2 - q)
+	vmulpd ymm5, ymm1, ymm1         			; ymm5 = (2 - q)^2
+	vmulpd ymm5, ymm5, ymm1         			; ymm5 = (2 - q)^3
+	vbroadcastsd ymm8, [rel quarter]
+	vmulpd ymm5, ymm5, ymm8						; ymm5 = 0.25 * (2 - q)^3
+	vdivpd ymm5, ymm5, ymm3         			; ymm5 = 0.25 * (2 - q)^3/(pi * h^3)
+
+	vblendvpd ymm7, ymm7, ymm5, ymm7 			; ymm7 = ymm5 if true else 0
+
+	; Combine both parts
+	vaddpd ymm0, ymm6, ymm7         			; Final result in ymm0
+	vmovupd [rsi], ymm0             			; Store result
 	ret
+;in rdi - double[4] lenghts
+;in rsi - double[4][4*] vectors
+;out rdx - double[4][4*] derivative
+;* - 4 to be sure
+kernel_function_derivative:
