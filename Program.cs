@@ -1,5 +1,6 @@
 ﻿using Avalonia;
 using System;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 
@@ -19,8 +20,10 @@ record Particle
 class Program
 {
     [DllImport("../../../libasm.so", EntryPoint = "kernel_function")]
-    extern static void test(double[] a, double[] output);
-    
+    extern static void kernel(double[] a, double[] output);
+    [DllImport("../../../libasm.so", EntryPoint = "kernel_function_derivative")]
+    extern static void kernel_derivative(double[] vec, double length, double[] output);
+
     [DllImport("../../../libasm.so", EntryPoint = "distance_between_two_points")]
     extern static double lenght(double[] a, double[] b);
 
@@ -55,16 +58,27 @@ class Program
         BuildAvaloniaApp()
         .StartWithClassicDesktopLifetime(args);
         parallel_loop();
-        double[] a = [1,1,1];
-        double[] b = [2,32,1];
-        Console.WriteLine(lenght(a,b));
-        double[] c =[0.001,0.2,1.0,0.8];
+        double[] a = [1, 1, 1];
+        double[] b = [2, 32, 1];
+        Console.WriteLine(lenght(a, b));
+        double[] c = [0.001, 0.2, 1.0, 0.8];
         double[] t = new double[4];
-        test(c,t);
-        foreach(double T in t)
+        kernel(c, t);
+        foreach (double T in t)
         {
             Console.WriteLine(T);
         }
+        Console.WriteLine("kernel derivative");
+        double[] vec = [0, 0.01, 0, 0];
+        double[] zero = [0, 0, 0, 0];
+        double vec_length = lenght(vec, zero);
+        double[] vec_derivative = [0, 0, 0, 0];
+        kernel_derivative(vec, vec_length, vec_derivative);
+        foreach (var item in vec_derivative)
+        {
+            Console.WriteLine(item);
+        }
+
     }
 
     // Avalonia configuration, don't remove; also used by visual designer.
