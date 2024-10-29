@@ -170,4 +170,4 @@ kernel_function_derivative:
 	vbroadcastsd ymm9, xmm9
 	vblendvpd ymm6, ymm5, ymm0, ymm9		;ymm6 = ymm5 if r < 2h else 0
 	vmovupd [rsi], ymm6
-	ret
+		ret

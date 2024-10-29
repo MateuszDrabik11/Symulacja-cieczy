@@ -41,7 +41,7 @@ class Lab
     public static void calcLenghts()
     {
         Random r = new Random();
-        int n = 1000;
+        int n = 10;
         double[,] vectors = new double[n, 4];
         double[] lenghts = new double[n];
         for (int i = 0; i < n; ++i)
@@ -54,13 +54,16 @@ class Lab
 
         int threadCount = Environment.ProcessorCount;
         Thread[] threads = new Thread[threadCount];
-        int chunkSize = n / threadCount;
+        int chunk = n / threadCount;
+        int rest = n % threadCount;
+        int start = 0;
         for (int i = 0; i < threadCount; i++)
         {
-            int start = i * chunkSize;
-            int end = start + chunkSize;
+            int end = start + chunk + (i < rest ? 1 : 0);
             threads[i] = new Thread(() => ThreadCalcLenght(vectors, start, end, lenghts));
+            Console.WriteLine("Thread {0}: {1}",i,end-start);
             threads[i].Start();
+            start = end;
         }
         for (int i = 0; i < threadCount; i++)
         {
@@ -69,7 +72,7 @@ class Lab
         for (int i = 0; i < n; i++)
         {
             double[] vector = GetRow(vectors, i);
-            Console.WriteLine("{0}.length = {1}", printVector(vector), lenghts[i]);
+            Console.WriteLine("{2} - |{0}| = {1}", printVector(vector), lenghts[i], i);
         }
     }
     public static double[] GetRow(double[,] matrix, long rowIndex)
