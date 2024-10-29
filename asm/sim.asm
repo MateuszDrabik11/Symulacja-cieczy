@@ -50,15 +50,15 @@ calc_density_and_pressure:
 distance_between_two_points:
 	;lenght of a - b vector
 	;sqrt((a.x-b.x)^2+(a.y-b.y)^2)	
-	vmovupd ymm0,[rdi]	;a
-	vmovupd ymm1,[rsi]	;b
-	vsubpd ymm0,ymm1	;a-b = c
-	vmulpd ymm0,ymm0	;c^2
-	vextractf128 xmm2, ymm0, 1 ;upper half of ymm0 to xmm2
-	vaddpd xmm0, xmm0,xmm2	;xmm0 + xmm2 = xmm0
-	vhaddpd xmm0,xmm0,xmm0	;horizontal add of xmm0
-	vsqrtpd xmm0,xmm0		;sqrt(xmm0) = xmm0
-	ret
+loop:	vmovupd ymm0,[rdi]	;a
+		vmovupd ymm1,[rsi]	;b
+		vsubpd ymm0,ymm1	;a-b = c
+		vmulpd ymm0,ymm0	;c^2
+		vextractf128 xmm2, ymm0, 1 ;upper half of ymm0 to xmm2
+		vaddpd xmm0, xmm0,xmm2	;xmm0 + xmm2 = xmm0
+		vhaddpd xmm0,xmm0,xmm0	;horizontal add of xmm0
+		vsqrtpd xmm0,xmm0		;sqrt(xmm0) = xmm0
+		ret
 
 ;assumption r > 0
 kernel_function:
