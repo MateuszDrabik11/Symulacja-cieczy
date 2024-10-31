@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
 namespace Symulacja_cząsteczek_cieczy;
@@ -13,7 +14,7 @@ class Lab
     extern static void kernel_derivative(double[] vec, double length, double[] output);
 
     [DllImport("../../../libasm.so", EntryPoint = "distance_between_two_points")]
-    extern static double lenght(double[] a, double[] b);
+    extern static void lenght(ref double start, long count, double[] b,ref double output);
 
     [DllImport("../../../libasm.so", EntryPoint = "increment_array")]
     extern static int add1(ref int a, int size);
@@ -38,10 +39,10 @@ class Lab
             Console.WriteLine(i);
         }
     }
-    public static void calcLenghts()
+    public static void calcLenghtsAvx()
     {
         Random r = new Random();
-        int n = 10;
+        int n = 100000000;
         double[,] vectors = new double[n, 4];
         double[] lenghts = new double[n];
         for (int i = 0; i < n; ++i)
@@ -52,55 +53,38 @@ class Lab
             }
         }
 
-        int threadCount = Environment.ProcessorCount;
+        int threadCount = 1;
         Thread[] threads = new Thread[threadCount];
         int chunk = n / threadCount;
         int rest = n % threadCount;
         int start = 0;
+        Stopwatch watch = Stopwatch.StartNew();
         for (int i = 0; i < threadCount; i++)
         {
-            int end = start + chunk + (i < rest ? 1 : 0);
-            threads[i] = new Thread(() => ThreadCalcLenght(vectors, start, end, lenghts));
-            Console.WriteLine("Thread {0}: {1}",i,end-start);
+            int count = chunk + (i < rest ? 1 : 0);
+            int localStart = start;
+            threads[i] = new Thread(() => lenght(ref vectors[localStart,0], count, zero, ref lenghts[localStart]));
+            Console.WriteLine("Thread {0}: {1}",i,count);
             threads[i].Start();
-            start = end;
+            start += count;
         }
         for (int i = 0; i < threadCount; i++)
         {
             threads[i].Join();
         }
+        watch.Stop();
         for (int i = 0; i < n; i++)
         {
-            double[] vector = GetRow(vectors, i);
-            Console.WriteLine("{2} - |{0}| = {1}", printVector(vector), lenghts[i], i);
+            //Console.WriteLine("{0} - |{1},{2},{3}| = {4}", i,vectors[i,0],vectors[i,1],vectors[i,2], lenghts[i]);
         }
-    }
-    public static double[] GetRow(double[,] matrix, long rowIndex)
-    {
-        double[] row = new double[4];
-        for (int j = 0; j < 4; j++)
+        for(int i = 0; i<n; i++)
         {
-            row[j] = matrix[rowIndex, j];
+            //Console.WriteLine("{0} - {1}",i,lenghts[i]==vector_lenght(vectors[i,0],vectors[i,1],vectors[i,2]));
         }
-        return row;
+        Console.WriteLine("Execution time: {0} ms, {1} ticks",watch.ElapsedMilliseconds, watch.ElapsedTicks);
     }
-    public static string printVector(double[] vec)
+    private static double vector_lenght(double x, double y, double z)
     {
-        string res = "[" + vec[0].ToString() + ","
-        + vec[1].ToString() + ","
-        + vec[2].ToString() + "]";
-        return res;
-    }
-    public static void ThreadCalcLenght(double[,] vectors, int start, int end, double[] lenghts)
-    {
-        for (int i = start; i < end; i++)
-        {
-            double[] vector = new double[4];
-            for (int j = 0; j < 4; j++)
-            {
-                vector[j] = vectors[i, j];
-            }
-            lenghts[i] = Lab.lenght(vector, zero);
-        }
+        return Math.Sqrt(x*x+y*y+z*z);
     }
 }

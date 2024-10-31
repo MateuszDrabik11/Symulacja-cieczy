@@ -17,6 +17,21 @@ namespace Symulacja_cząsteczek_cieczy;
 //     public double mass;
 // }
 
+//1000 elements, 4 t
+//avx - 49 ms, 49524382 ticks, 56 ms, 56250020 ticks, 104 ms, 104077437 ticks
+//asm - 51 ms, 51407796 ticks, 69 ms, 69765497 ticks, 29 ms, 29753280 ticks
+//c   - 55 ms, 55386917 ticks, 52 ms, 52063571 ticks, 66 ms, 66893889 ticks
+
+//1000 elements, 1 t
+//avx - 30 ms, 30732128 ticks
+//asm - 25 ms, 25048458 ticks
+//c   - 45 ms, 45996242 ticks
+
+//100000000 elements, 1 t
+//avx - 3295 ms, 3295304853 ticks
+//asm - 5577 ms, 5577760285 ticks
+//c   - 7139 ms, 7139345722 ticks
+
 class Program
 {
     // Initialization code. Don't use any Avalonia, third-party APIs or any
@@ -27,7 +42,7 @@ class Program
     {
         BuildAvaloniaApp()
         .StartWithClassicDesktopLifetime(args);
-        Lab.calcLenghts();
+        Lab.calcLenghtsAvx();
     }
 
     // Avalonia configuration, don't remove; also used by visual designer.

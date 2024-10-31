@@ -19,6 +19,7 @@ segment .text
 	global kernel_function
 	global kernel_function_derivative
 	global distance_between_two_points
+	global lenght_no_avx
 
 temp:
 	mov rax, [rel alpha]
@@ -43,22 +44,52 @@ calc_density_and_pressure:
 	mov rax, [rdi]
 	ret
 
-;args
-;0	a* double
-;1	b* double
-;out double
+;rdi	double[][]	in start, [i][xi,yi,zi,0]
+;rsi	long		in end
+;rdx	double[]	in base_position
+;rcx	double[]	out lenghts
 distance_between_two_points:
-	;lenght of a - b vector
-	;sqrt((a.x-b.x)^2+(a.y-b.y)^2)	
+		;lenght of a - b vector
+		;sqrt((a.x-b.x)^2+(a.y-b.y)^2)
+		vmovupd ymm1,[rdx]	;b
 loop:	vmovupd ymm0,[rdi]	;a
-		vmovupd ymm1,[rsi]	;b
 		vsubpd ymm0,ymm1	;a-b = c
 		vmulpd ymm0,ymm0	;c^2
-		vextractf128 xmm2, ymm0, 1 ;upper half of ymm0 to xmm2
-		vaddpd xmm0, xmm0,xmm2	;xmm0 + xmm2 = xmm0
-		vhaddpd xmm0,xmm0,xmm0	;horizontal add of xmm0
-		vsqrtpd xmm0,xmm0		;sqrt(xmm0) = xmm0
+		vhaddpd ymm0, ymm0, ymm0       	;Horizontal add in each 128-bit half
+        vextractf128 xmm2, ymm0, 1     	;Extract upper half of ymm0 to xmm1
+        vaddpd xmm0, xmm0, xmm2			;horizontal add of xmm0
+		vsqrtpd xmm0,xmm0				;sqrt(xmm0) = xmm0
+		movsd [rcx], xmm0
+		add rdi, 32
+		add rcx, 8
+		dec rsi
+		jnz loop
 		ret
+
+lenght_no_avx:
+			;rdi	double[][]	in start, [i][xi,yi,zi,0]
+			;rsi	long		in end
+			;rdx	double[]	in base_position
+			;rcx	double[]	out lenghts
+loop1:		movsd xmm0,qword [rdi]	;x
+			subsd xmm0,qword [rdx]	
+			mulsd xmm0,xmm0		;(x0-x1)^2 = xmm0
+			movsd xmm1,qword [rdi+8]	;y
+			subsd xmm1,qword [rdx+8]	
+			mulsd xmm1,xmm1		;(y0-y1)^2 = xmm1
+			movsd xmm2,qword [rdi+16]	;<second>
+			subsd xmm2,qword [rdx+16]	
+			mulsd xmm2,xmm2		;(z0-z1)^2 = xmm2
+			addsd xmm0,xmm1
+			addsd xmm0,xmm2		;xmm0 = (x0-x1)^2 + (y0-y1)^2 + (z0-z1)^2
+			sqrtsd xmm0,xmm0
+			movsd [rcx],xmm0
+			add rdi,32
+			add rcx,8
+			dec rsi
+			jnz loop1
+			ret
+
 
 ;assumption r > 0
 kernel_function:
