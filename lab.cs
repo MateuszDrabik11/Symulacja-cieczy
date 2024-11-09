@@ -13,7 +13,9 @@ class Lab
     [DllImport("../../../libasm.so", EntryPoint = "kernel_function_derivative")]
     extern static void kernel_derivative(double[] vec, double length, double[] output);
 
-    [DllImport("../../../libasm.so", EntryPoint = "distance_between_two_points")]
+    [DllImport("../../../libc.so", EntryPoint = "lenght")]
+
+    //[DllImport("../../../libasm.so", EntryPoint = "distance_between_two_points")]
     extern static void lenght(ref double start, long count, double[] b,ref double output);
 
     [DllImport("../../../libasm.so", EntryPoint = "increment_array")]
@@ -53,7 +55,7 @@ class Lab
             }
         }
 
-        int threadCount = 1;
+        int threadCount = 2;
         Thread[] threads = new Thread[threadCount];
         int chunk = n / threadCount;
         int rest = n % threadCount;
