@@ -14,40 +14,22 @@ minus_three dq -3.0
 nine_for dq 2.25
 minus_three_for dq -0.75
 segment .text
-	global increment_array
 	global calc_density_and_pressure
 	global kernel_function
 	global kernel_function_derivative
 	global distance_between_two_points
 	global lenght_no_avx
 
-temp:
-	mov rax, [rel alpha]
-	ret
-
-increment_array:
-Loop:	mov rax, [rdi + 4*rsi-4]
-		inc rax
-		mov [rdi + 4*rsi-4], rax
-		dec rsi
-		test rsi,rsi
-		jnz Loop
-		ret
-
-;args
-;0	masses* double,
-;1	positions** double,
-;2 	this_particle_position* double
-;4	out density double
-;5	out pressure double
 calc_density_and_pressure:	
 	mov rax, [rdi]
 	ret
 
-;rdi	double[][]	in start, [i][xi,yi,zi,0]
-;rsi	long		in end
-;rdx	double[]	in base_position
-;rcx	double[]	out lenghts
+
+;rdi	double[][]	in chunk, [i][xi,yi,zi,0]
+;rsi	long		in chunk_size
+;rdx	double[][]	in vectors
+;rcx 	long 		in count
+;r8		double[][]	out lenghts
 distance_between_two_points:
 		;lenght of a - b vector
 		;sqrt((a.x-b.x)^2+(a.y-b.y)^2)
@@ -92,7 +74,11 @@ loop1:		movsd xmm0,qword [rdi]	;x
 
 
 ;assumption r > 0
+;rdi - double* start
+;rsi - int count
+;rdx - double* output
 kernel_function:
+loopk:
 	vmovupd ymm0, [rdi]             			; ymm0 = r
 	vbroadcastsd ymm1, [rel zero_double]		; ymm1 = 0
 
@@ -144,14 +130,19 @@ kernel_function:
 
 	vblendvpd ymm7, ymm7, ymm5, ymm7 			; ymm7 = ymm5 if true else 0
 	vaddpd ymm0, ymm6, ymm7         			; Final result in ymm0
-	vmovupd [rsi], ymm0             			; Store result
+	vmovupd [rdx], ymm0             			; Store result
+	add rdi,32
+	add rdx,8
+	dec rsi
+	jnz loopk
 	ret
 
-;in xmm0 - double lenght
-;in rdi - double[4] vector
-;out rsi - double[4] derivative
-;* - 4 to be sure
+;rdi - double* vector
+;rsi - int count
+;rdx - double* derivative
+;xmm0 - double lenght
 kernel_function_derivative:
+loopkd:
 	movsd xmm1, xmm0						;xmm1 = length
 	movsd xmm7, xmm1						;xmm7 = length
 	vmovupd ymm0, [rdi]						;ymm1 = vector
@@ -201,4 +192,8 @@ kernel_function_derivative:
 	vbroadcastsd ymm9, xmm9
 	vblendvpd ymm6, ymm5, ymm0, ymm9		;ymm6 = ymm5 if r < 2h else 0
 	vmovupd [rsi], ymm6
-		ret
+	add rdi,32
+	add rdx,8
+	dec rsi
+	jnz loopkd
+	ret
