@@ -17,6 +17,6 @@
     <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" Version="11.1.0" />
   </ItemGroup>
   <Target Name="PreBuild" BeforeTargets="Build">
-    <Exec Command="make"/>
+    <Exec Command="make" />
   </Target>
 </Project>

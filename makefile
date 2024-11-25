@@ -18,7 +18,7 @@ $(cpp_file): $(cpp_obj)
 	@g++ -g -shared -o $(cpp_file) $(cpp_obj)
 
 %.o: %.cpp
-	@g++ -g -c -o $@ $<
+	@g++ -g -fPIC -c -o $@ $<
 
 clean:
 	@rm -f ./asm/*.o ./cpp/*.o *.so
