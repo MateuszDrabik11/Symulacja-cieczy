@@ -108,3 +108,39 @@ extern "C" void calc_density_and_pressure(double* masses, double* kernels,long p
         out_pressure[particle_index+j] = k*(density - fluid_density);
     }
 }
+
+extern "C" void calc_forces(double* masses, double* densities, double* kernel_derivatives,double* kernels, double* velocities,double* positions,long particles, long start_index,long chunk,double* accelerations)
+{
+    for (long i = 0; i < chunk; i++)
+    {
+        double pressure[4] = {0,0,0,0};
+        for (long j = 0; j < particles; j++)
+        {
+            pressure[0] += masses[j] * 
+            (
+                masses[start_index + i]/(densities[start_index + i] * densities[start_index + i]) +
+                masses[j]/(densities[j] * densities[j])
+            ) * kernel_derivatives[particles*(start_index+i)+j];
+            pressure[1] += masses[j] * 
+            (
+                masses[start_index + i]/(densities[start_index + i] * densities[start_index + i]) +
+                masses[j]/(densities[j] * densities[j])
+            ) * kernel_derivatives[particles*(start_index+i)+j+1];
+            pressure[2] += masses[j] * 
+            (
+                masses[start_index + i]/(densities[start_index + i] * densities[start_index + i]) +
+                masses[j]/(densities[j] * densities[j])
+            ) * kernel_derivatives[particles*(start_index+i)+j+2];
+        }
+        double viscosity[4] = {0,0,0,0};
+        for (long j = 0; j < particles; j++)
+        {
+            viscosity[0] += (velocities[4*j] - velocities[4*(start_index+i)])*kernels[particles*(start_index+i)+j];
+            viscosity[1] += (velocities[4*j+1] - velocities[4*(start_index+i)+1])*kernels[particles*(start_index+i)+j];
+            viscosity[2] += (velocities[4*j+2] - velocities[4*(start_index+i)+2])*kernels[particles*(start_index+i)+j];
+        }
+        accelerations[4*(start_index+i)] = pressure[0] + viscosity[0];
+        accelerations[4*(start_index+i)+1] = pressure[1] + viscosity[1];
+        accelerations[4*(start_index+i)+2] = pressure[2] + viscosity[2];
+    }
+}

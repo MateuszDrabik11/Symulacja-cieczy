@@ -18,7 +18,8 @@ class Lab
     extern static void lenght(ref double start, long count, long size, ref double b, ref double output);
     [DllImport("../../../libc.so", EntryPoint = "calc_density_and_pressure")]
     extern static void calc_density_and_pressure(double[] masses, ref double kernels, long p_index, long number_of_particles, long chunk, double[] out_density, double[] out_pressure);
-
+    [DllImport("../../../libc.so", EntryPoint = "calc_forces")]
+    extern static void calc_forces(double[] masses, double[] densities,ref double kernel_derivatives,ref double kernels,ref double velocities,ref double positions,long particles, long start_index,long chunk,ref double accelerations);
 
     static double[] zero = [0, 0, 0, 0];
 
@@ -107,6 +108,8 @@ class Lab
         double[,] lenghts = new double[n, n];
         double[,] kernels = new double[n, n];
         double[,,] kernel_derivatives = new double[n, n, 4];
+        double[,] velocities = new double[n,4];
+        double[,] accelerations = new double[n,4];
         double[] masses = new double[n];
         for (int i = 0; i < n; i++)
         {
@@ -138,6 +141,7 @@ class Lab
                 kernel(ref lenghts[localStart, 0], count, n, ref kernels[localStart, 0]);
                 kernel_derivative(ref lenghts[localStart, 0], ref vectors[localStart, 0], ref vectors[0, 0], count, n, ref kernel_derivatives[localStart, 0, 0]);
                 calc_density_and_pressure(masses, ref kernels[0, 0], localStart, n, count, densities, pressures);
+                calc_forces(masses, densities, ref kernel_derivatives[0, 0, 0],ref kernels[0,0],ref velocities[0,0],ref vectors[0,0],n,localStart,count,ref accelerations[0,0]);
             });
             Console.WriteLine("Thread {0}: {1}", i, count);
             threads[i].Start();
@@ -187,6 +191,11 @@ class Lab
         for (int i = 0; i < n; i++)
         {
             Console.WriteLine($"{pressures[i],10:0.00}");
+        }
+        Console.WriteLine("========================================================");
+        for (int i = 0; i < n; i++)
+        {
+            Console.WriteLine($"[{accelerations[i,0],10:0.00},{accelerations[i,1],10:0.00},{accelerations[i,2],10:0.00}]");
         }
         Console.WriteLine("Execution time: {0} ms, {1} ticks", watch.ElapsedMilliseconds, watch.ElapsedTicks);
     }
