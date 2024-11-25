@@ -1,6 +1,8 @@
 #include <math.h>
+#include <stdio.h>
 #define _USE_MATH_DEFINES
 #define h 0.5
+#define k 2000
 
 extern "C" int add(int a, int b)
 {
@@ -91,5 +93,18 @@ extern "C" void kernel_derivative(double* lenghts,double* vector_start,double* v
                 continue;
             }
         }
+    }
+}
+extern "C" void calc_density_and_pressure(double* masses, double* kernels,long particle_index,long number_of_particles, long chunk, double* out_density, double* out_pressure, double fluid_density)
+{
+    for(long j = 0; j < chunk;++j)
+    {
+        double density = 0;
+        for(long i = 0; i < number_of_particles;++i)
+        {
+            density += masses[i]*kernels[number_of_particles*(particle_index+j) + i];
+        }
+        out_density[particle_index+j] = density;
+        out_pressure[particle_index+j] = k*(density - fluid_density);
     }
 }

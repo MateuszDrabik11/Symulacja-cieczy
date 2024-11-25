@@ -42,7 +42,7 @@ class Program
     {
         BuildAvaloniaApp()
         .StartWithClassicDesktopLifetime(args);
-        Lab.calcLenghtsAvx();
+        Lab.densities();
     }
 
     // Avalonia configuration, don't remove; also used by visual designer.
