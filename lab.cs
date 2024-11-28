@@ -130,7 +130,7 @@ class Lab
         }
 
         Stopwatch watch = Stopwatch.StartNew();
-        for (int j = 0; j < 10; j++)
+        for (int j = 0; j < 1000; j++)
         {
             int threadCount = 4;
             Thread[] threads = new Thread[threadCount];
