@@ -19,35 +19,41 @@ extern "C" void lenght(double *start, unsigned long count, unsigned long base_co
         }
     }
 }
-// chyba tez do poprawy
 extern "C" void kernel(double *lenghts_start, unsigned long chunk, unsigned long size, double *output)
 {
     for (unsigned long i = 0; i < size; i++)
     {
         for (unsigned long j = 0; j < chunk; j++)
         {
-            // if(lenghts_start[size*j + i] > 2* h)
+            // // if(lenghts_start[size*j + i] > 2* h)
+            // // {
+            // //     output[size*j + i] = 0;
+            // //     continue;
+            // // }
+            // double q = lenghts_start[size * j + i] / h;
+
+            // if (1 > q && q >= 0)
             // {
-            //     output[size*j + i] = 0;
+            //     output[size * j + i] = (1 - 1.5 * q * q + 0.75 * q * q * q) / (M_PI * h * h * h);
             //     continue;
             // }
-            double q = lenghts_start[size * j + i] / h;
-
-            if (1 > q && q >= 0)
+            // else if (2 >= q && q >= 1)
+            // {
+            //     output[size * j + i] = 0.25 * (2 - q) * (2 - q) * (2 - q) / (M_PI * h * h * h);
+            //     continue;
+            // }
+            // else
+            // {
+            //     output[size * j + i] = 0;
+            //     continue;
+            // }
+            double r = lenghts_start[size*j + i];
+            if(r * r > h*h)
             {
-                output[size * j + i] = (1 - 1.5 * q * q + 0.75 * q * q * q) / (M_PI * h * h * h);
+                output[size*j + i] = 0;
                 continue;
             }
-            else if (2 >= q && q >= 1)
-            {
-                output[size * j + i] = 0.25 * (2 - q) * (2 - q) * (2 - q) / (M_PI * h * h * h);
-                continue;
-            }
-            else
-            {
-                output[size * j + i] = 0;
-                continue;
-            }
+            output[size*j + i] = 315.0f / (64.0f * 3.1416 * pow(h, 9)) * pow(h*h - r*r, 3);
         }
     }
 }
@@ -67,37 +73,8 @@ extern "C" void kernel_derivative(double *lenghts, double *vector_start, double 
             //     output[index + 3] = 0;
             //     continue;
             // }
-            double q = lenghts[size * j + i] / h;
             double vec[3] = {vector_start[4 * i] - vectors[4 * j], vector_start[4 * i + 1] - vectors[4 * j + 1], vector_start[4 * i + 2] - vectors[4 * j + 2]};
-            if (lenghts[size * j + i] != 0)
-            {
-
-                if (1 > q && q >= 0)
-                {
-                    output[index] = (-3 * q + 2.25 * q * q * vec[0]) / (lenghts[size * j + i] * M_PI * h * h * h * h);
-                    output[index + 1] = (-3 * q + 2.25 * q * q * vec[1]) / (lenghts[size * j + i] * M_PI * h * h * h * h);
-                    output[index + 2] = (-3 * q + 2.25 * q * q * vec[2]) / (lenghts[size * j + i] * M_PI * h * h * h * h);
-                    output[index + 3] = 0;
-                    continue;
-                }
-                else if (2 >= q && q >= 1)
-                {
-                    output[index] = -0.75 * (2 - q) * (2 - q) * vec[0] / (lenghts[size * j + i] * M_PI * h * h * h * h);
-                    output[index + 1] = -0.75 * (2 - q) * (2 - q) * vec[1] / (lenghts[size * j + i] * M_PI * h * h * h * h);
-                    output[index + 2] = -0.75 * (2 - q) * (2 - q) * vec[2] / (lenghts[size * j + i] * M_PI * h * h * h * h);
-                    output[index + 3] = 0;
-                    continue;
-                }
-                else
-                {
-                    output[index] = 0;
-                    output[index + 1] = 0;
-                    output[index + 2] = 0;
-                    output[index + 3] = 0;
-                    continue;
-                }
-            }
-            else
+            if(lenghts[size * j + i] == 0)
             {
                 output[index] = 0;
                 output[index + 1] = 0;
@@ -105,6 +82,48 @@ extern "C" void kernel_derivative(double *lenghts, double *vector_start, double 
                 output[index + 3] = 0;
                 continue;
             }
+            float t1 = -45.0f / (M_PI * pow(h, 6));
+            float t2 = pow(h - lenghts[size * j + i], 2);
+            output[index] = vec[0] * t1 * t2/lenghts[size * j + i];
+            output[index + 1] = vec[1] * t1 * t2/lenghts[size * j + i];
+            output[index + 2] = vec[2] * t1 * t2/lenghts[size * j + i];
+            output[index + 3] = 0;
+        //     if (lenghts[size * j + i] != 0)
+        //     {
+
+        //         if (1 > q && q >= 0)
+        //         {
+        //             output[index] = (-3 * q + 2.25 * q * q * vec[0]) / (lenghts[size * j + i] * M_PI * h * h * h * h);
+        //             output[index + 1] = (-3 * q + 2.25 * q * q * vec[1]) / (lenghts[size * j + i] * M_PI * h * h * h * h);
+        //             output[index + 2] = (-3 * q + 2.25 * q * q * vec[2]) / (lenghts[size * j + i] * M_PI * h * h * h * h);
+        //             output[index + 3] = 0;
+        //             continue;
+        //         }
+        //         else if (2 >= q && q >= 1)
+        //         {
+        //             output[index] = -0.75 * (2 - q) * (2 - q) * vec[0] / (lenghts[size * j + i] * M_PI * h * h * h * h);
+        //             output[index + 1] = -0.75 * (2 - q) * (2 - q) * vec[1] / (lenghts[size * j + i] * M_PI * h * h * h * h);
+        //             output[index + 2] = -0.75 * (2 - q) * (2 - q) * vec[2] / (lenghts[size * j + i] * M_PI * h * h * h * h);
+        //             output[index + 3] = 0;
+        //             continue;
+        //         }
+        //         else
+        //         {
+        //             output[index] = 0;
+        //             output[index + 1] = 0;
+        //             output[index + 2] = 0;
+        //             output[index + 3] = 0;
+        //             continue;
+        //         }
+        //     }
+        //     else
+        //     {
+        //         output[index] = 0;
+        //         output[index + 1] = 0;
+        //         output[index + 2] = 0;
+        //         output[index + 3] = 0;
+        //         continue;
+        //     }
         }
     }
 }
@@ -125,11 +144,7 @@ extern "C" void calc_density_and_pressure(double *masses, double *kernels, long 
         {
             density += masses[i] * kernels[number_of_particles * (particle_index + j) + i];
         }
-        density = max(1.0, density);
-        if (density == 1.0)
-        {
-            h *= 10;
-        }
+        density = max(density,1.0);
         out_density[particle_index + j] = density;
         out_pressure[particle_index + j] = k * (density - fluid_density);
     }
@@ -142,15 +157,15 @@ extern "C" void calc_forces(double *masses, double *densities, double *kernel_de
         double pressure[4] = {0, 0, 0, 0};
         for (long j = 0; j < particles; j++)
         {
-            pressure[0] += masses[j] *
+            pressure[0] -= masses[j] *
                            (masses[start_index + i] / (densities[start_index + i] * densities[start_index + i]) +
                             masses[j] / (densities[j] * densities[j])) *
                            kernel_derivatives[particles * (start_index + i) + j];
-            pressure[1] += masses[j] *
+            pressure[1] -= masses[j] *
                            (masses[start_index + i] / (densities[start_index + i] * densities[start_index + i]) +
                             masses[j] / (densities[j] * densities[j])) *
                            kernel_derivatives[particles * (start_index + i) + j + 1];
-            pressure[2] += masses[j] *
+            pressure[2] -= masses[j] *
                            (masses[start_index + i] / (densities[start_index + i] * densities[start_index + i]) +
                             masses[j] / (densities[j] * densities[j])) *
                            kernel_derivatives[particles * (start_index + i) + j + 2];
@@ -162,9 +177,9 @@ extern "C" void calc_forces(double *masses, double *densities, double *kernel_de
             viscosity[1] += (velocities[4 * j + 1] - velocities[4 * (start_index + i) + 1]) * kernels[particles * (start_index + i) + j];
             viscosity[2] += (velocities[4 * j + 2] - velocities[4 * (start_index + i) + 2]) * kernels[particles * (start_index + i) + j];
         }
-        accelerations[4 * (start_index + i)] = pressure[0] + viscosity[0];
-        accelerations[4 * (start_index + i) + 1] = pressure[1] + viscosity[1];
-        accelerations[4 * (start_index + i) + 2] = pressure[2] + viscosity[2];
+        accelerations[4 * (start_index + i)] = pressure[0] + viscosity[0] / densities[start_index + i];
+        accelerations[4 * (start_index + i) + 1] = pressure[1] + viscosity[1] / densities[start_index + i];
+        accelerations[4 * (start_index + i) + 2] = pressure[2] + viscosity[2] / densities[start_index + i];
     }
 }
 extern "C" void time_integration(double *positions, double *velocities, double *accelerations, double dt, long start_index, long chunk)
@@ -198,7 +213,7 @@ extern "C" void gravity(double *accelerations, double g, long start_index, long 
 }
 extern "C" void boundries(double *positions, double *velocities, long start_index, long chunk, double x_max, double y_max, double z_max, double bouncines, double dt)
 {
-    double eps = 0.00001;
+    double eps = 0.001;
     for (long i = 0; i < chunk; i++)
     {
         double temp[3] = {0, 0, 0};
@@ -214,9 +229,9 @@ extern "C" void boundries(double *positions, double *velocities, long start_inde
         {
             temp[2] = -velocities[4 * (start_index + i) + 2] * bouncines;
         }
-        positions[4 * (start_index + i)] = max(0+eps, min(positions[4 * (start_index + i)], x_max));
-        positions[4 * (start_index + i) + 1] = max(0+eps, min(positions[4 * (start_index + i) + 1], y_max));
-        positions[4 * (start_index + i) + 2] = max(0+eps, min(positions[4 * (start_index + i) + 2], z_max));
+        positions[4 * (start_index + i)] = max(0+eps, min(positions[4 * (start_index + i)], x_max-eps));
+        positions[4 * (start_index + i) + 1] = max(0+eps, min(positions[4 * (start_index + i) + 1], y_max-eps));
+        positions[4 * (start_index + i) + 2] = max(0+eps, min(positions[4 * (start_index + i) + 2], z_max-eps));
         positions[4 * (start_index + i)] += dt * temp[0];
         positions[4 * (start_index + i) + 1] += dt * temp[1];
         positions[4 * (start_index + i) + 2] += dt * temp[2];

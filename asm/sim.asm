@@ -1,6 +1,6 @@
 segment .data	;constants
 alpha dq 0.31985	;1/pi
-h dq 1.0
+h dq 2.0
 zero_double dq 0.0
 one_double dq 1.0
 two_double dq 2.0
@@ -13,64 +13,60 @@ quarter_pi dq 0.7854
 minus_three dq -3.0
 nine_for dq 2.25
 minus_three_for dq -0.75
+treefifteen dq 315.0
+sixtyfour dq 64.0
 segment .text
 	global calc_density_and_pressure
 	global kernel_function
 	global kernel_function_derivative
-	global distance_between_two_points
-	global lenght_no_avx
+	global lenght
+	global kernel
 
 calc_density_and_pressure:	
 	mov rax, [rdi]
 	ret
 
 
-;rdi	double[][]	in chunk, [i][xi,yi,zi,0]
-;rsi	long		in chunk_size
-;rdx	double[][]	in vectors
-;rcx 	long 		in count
-;r8		double[][]	out lenghts
-distance_between_two_points:
-		;lenght of a - b vector
-		;sqrt((a.x-b.x)^2+(a.y-b.y)^2)
-		vmovupd ymm1,[rdx]	;b
-loop:	vmovupd ymm0,[rdi]	;a
+;rdi double* chunk_start
+;rsi long chunk_size
+;rdx long size
+;rcx double* all_positions
+;r8 double* output
+lenght:
+		xor r9,r9
+		xor r10,r10
+		jmp ls
+loop1:	inc r9
+ls		cmp r9, rdx			;r9 - loop1 counter
+		je endl
+		mov rax, r9
+		shl rax, 5
+		add rax, rcx 
+		vmovupd ymm1,[rax]
+		xor r10,r10			;r10 - loop2 counter
+loop2:	cmp r10, rsi
+		je loop1
+		mov rax ,r10
+		shl rax, 5
+		add rax, rdi
+		vmovupd ymm0,[rax]	;a
 		vsubpd ymm0,ymm1	;a-b = c
 		vmulpd ymm0,ymm0	;c^2
 		vhaddpd ymm0, ymm0, ymm0       	;Horizontal add in each 128-bit half
-        vextractf128 xmm2, ymm0, 1     	;Extract upper half of ymm0 to xmm1
+        vextractf128 xmm2, ymm0, 1     	;Extract upper half of ymm0 to xmm2
         vaddpd xmm0, xmm0, xmm2			;horizontal add of xmm0
 		vsqrtpd xmm0,xmm0				;sqrt(xmm0) = xmm0
-		movsd [rcx], xmm0
-		add rdi, 32
-		add rcx, 8
-		dec rsi
-		jnz loop
-		ret
+		mov rax, rdx
+		imul rax,r10
+		add rax, r9
+		shl rax, 3
+		add rax, r8
+		movsd [rax], xmm0
+		inc r10
+		jmp loop2
+endl:	ret
 
-lenght_no_avx:
-			;rdi	double[][]	in start, [i][xi,yi,zi,0]
-			;rsi	long		in end
-			;rdx	double[]	in base_position
-			;rcx	double[]	out lenghts
-loop1:		movsd xmm0,qword [rdi]	;x
-			subsd xmm0,qword [rdx]	
-			mulsd xmm0,xmm0		;(x0-x1)^2 = xmm0
-			movsd xmm1,qword [rdi+8]	;y
-			subsd xmm1,qword [rdx+8]	
-			mulsd xmm1,xmm1		;(y0-y1)^2 = xmm1
-			movsd xmm2,qword [rdi+16]	;<second>
-			subsd xmm2,qword [rdx+16]	
-			mulsd xmm2,xmm2		;(z0-z1)^2 = xmm2
-			addsd xmm0,xmm1
-			addsd xmm0,xmm2		;xmm0 = (x0-x1)^2 + (y0-y1)^2 + (z0-z1)^2
-			sqrtsd xmm0,xmm0
-			movsd [rcx],xmm0
-			add rdi,32
-			add rcx,8
-			dec rsi
-			jnz loop1
-			ret
+
 
 
 ;assumption r > 0
@@ -197,3 +193,59 @@ loopkd:
 	dec rsi
 	jnz loopkd
 	ret
+
+
+;rdi - double* lenghts
+;rsi - long chunk
+;rdx - long size
+;rcx - double* output
+kernel:
+		xor r8,r8	;loop1 counter
+		xor r9,r9	;loop2 counter
+		movsd xmm1, [rel h]
+		movsd xmm2, [rel treefifteen]
+		movsd xmm3, [rel sixtyfour]
+		mulsd xmm3, [rel pi]
+		mulsd xmm3, xmm1
+		mulsd xmm3, xmm1
+		mulsd xmm3, xmm1
+		mulsd xmm3, xmm1
+		mulsd xmm3, xmm1
+		mulsd xmm3, xmm1
+		mulsd xmm3, xmm1
+		mulsd xmm3, xmm1
+		mulsd xmm3, xmm1
+		divsd xmm2, xmm3	;xmm1 - h, xmm2 - const 315.0f / (64.0f * M_PI * pow(h, 9))
+		jmp ks
+loopk1:	inc r8
+ks:		cmp r8, rdx
+		je endk
+		xor r9,r9
+loopk2:	cmp r9, rsi
+		je loopk1
+		mov rax, rdx
+		imul rax, r9
+		add rax, r8
+		shl rax,3
+		inc r9
+		movsd xmm0, [rdi + rax]
+		mulsd xmm0,xmm0
+		ucomisd xmm0, xmm1
+		ja set0
+		movsd xmm3, xmm1 
+		mulsd xmm3,xmm3	;h*h
+		mulsd xmm0,xmm0	;r*r
+		subsd xmm3,xmm0
+		movsd xmm4, xmm3
+		mulsd xmm3, xmm3
+		mulsd xmm3, xmm4
+		movsd xmm4, xmm2
+		mulsd xmm4, xmm3
+		movsd [rcx + rax], xmm4
+		jmp loopk2
+endk:	ret
+set0:	mov r10, 0
+		mov [rcx + rax], r10
+		jmp loopk2
+
+

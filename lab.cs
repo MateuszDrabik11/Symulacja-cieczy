@@ -72,7 +72,7 @@ class Lab
             int localStart = start;
             threads[i] = new Thread(() =>
             {
-                boundries(ref vectors[0, 0], ref velocities[0, 0], localStart, count, 10, 10, 10, 0.6, 0.1);
+                boundries(ref vectors[0, 0], ref velocities[0, 0], localStart, count, 1, 1, 1, 0.6, 0.1);
             });
             threads[i].Start();
             start += count;
@@ -224,8 +224,8 @@ class Lab
     public static void densities()
     {
         Random r = new Random();
-        int n = 10;
-        int threadCount = 4;
+        int n = 50;
+        int threadCount = 12;
         double[,] vectors = new double[n, 4];
         double[,] lenghts = new double[n, n];
         double[,] kernels = new double[n, n];
@@ -235,15 +235,15 @@ class Lab
         double[] masses = new double[n];
         for (int i = 0; i < n; i++)
         {
-            masses[i] = 100;
+            masses[i] = 3.33;
         }
         double[] pressures = new double[n];
         double[] densities = new double[n];
         for (int i = 0; i < n; ++i)
         {
-            vectors[i, 0] = r.NextDouble() + r.Next(0,4);
-            vectors[i, 1] = r.NextDouble() + r.Next(0,4);
-            vectors[i, 2] = 10;
+            vectors[i, 0] = r.NextDouble();
+            vectors[i, 1] = r.NextDouble();
+            vectors[i, 2] = 1-0.000001;
         }
 
         Stopwatch watch = Stopwatch.StartNew();

@@ -42,7 +42,10 @@ class Program
     {
         BuildAvaloniaApp()
         .StartWithClassicDesktopLifetime(args);
-        Lab.densities();
+        //Lab.densities();
+        Tests.Tests test = new Tests.Tests();
+        Console.WriteLine("Lenght test: {0}",test.TestLenght());
+        Console.WriteLine("Kernel test: {0}",test.TestKernel());
     }
 
     // Avalonia configuration, don't remove; also used by visual designer.
