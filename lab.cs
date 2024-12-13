@@ -224,8 +224,8 @@ class Lab
     public static void densities()
     {
         Random r = new Random();
-        int n = 50;
-        int threadCount = 12;
+        int n = 10;
+        int threadCount = 4;
         double[,] vectors = new double[n, 4];
         double[,] lenghts = new double[n, n];
         double[,] kernels = new double[n, n];
@@ -264,37 +264,37 @@ class Lab
             {
                 Console.WriteLine($"[{vectors[i, 0],10:0.00},{vectors[i, 1],10:0.00},{vectors[i, 2],10:0.00}]");
             }
-            // Console.WriteLine("========================================================");
-            // for (int i = 0; i < n; i++)
-            // {
-            //     for (int z = 0; z < n - 1; z++)
-            //     {
-            //         Console.Write($"{kernels[i, z],10:0.00}");
-            //         Console.Write(" | ");
-            //     }
-            //     Console.WriteLine($"{kernels[i, n - 1],10:0.00}");
-            // }
-            // Console.WriteLine("========================================================");
-            // for (int i = 0; i < n; i++)
-            // {
-            //     Console.WriteLine($"{densities[i],10:0.00}");
-            // }
-            // Console.WriteLine("========================================================");
-            // for (int i = 0; i < n; i++)
-            // {
-            //     Console.WriteLine($"{pressures[i],10:0.00}");
-            // }
-            // Console.WriteLine("========================================================");
-            // for (int i = 0; i < n; i++)
-            // {
-            //     for (int z = 0; z < n - 1; z++)
-            //     {
-            //         string formattedArray = $"[{kernel_derivatives[i, z, 0]:0.00}, {kernel_derivatives[i, z, 1]:0.00}, {kernel_derivatives[i, z, 2]:0.00}]";
-            //         Console.Write($"{formattedArray,25}");
-            //         Console.Write(" | ");
-            //     }
-            //     Console.WriteLine($"{kernel_derivatives[i, n - 1, 0]:0.00},{kernel_derivatives[i, n - 1, 1]:0.00},{kernel_derivatives[i, n - 1, 2]:0.00}");
-            // }
+            Console.WriteLine("========================================================");
+            for (int i = 0; i < n; i++)
+            {
+                for (int z = 0; z < n - 1; z++)
+                {
+                    Console.Write($"{kernels[i, z],10:0.00}");
+                    Console.Write(" | ");
+                }
+                Console.WriteLine($"{kernels[i, n - 1],10:0.00}");
+            }
+            Console.WriteLine("========================================================");
+            for (int i = 0; i < n; i++)
+            {
+                Console.WriteLine($"{densities[i],10:0.00}");
+            }
+            Console.WriteLine("========================================================");
+            for (int i = 0; i < n; i++)
+            {
+                Console.WriteLine($"{pressures[i],10:0.00}");
+            }
+            Console.WriteLine("========================================================");
+            for (int i = 0; i < n; i++)
+            {
+                for (int z = 0; z < n - 1; z++)
+                {
+                    string formattedArray = $"[{kernel_derivatives[i, z, 0]:0.00}, {kernel_derivatives[i, z, 1]:0.00}, {kernel_derivatives[i, z, 2]:0.00}]";
+                    Console.Write($"{formattedArray,25}");
+                    Console.Write(" | ");
+                }
+                Console.WriteLine($"{kernel_derivatives[i, n - 1, 0]:0.00},{kernel_derivatives[i, n - 1, 1]:0.00},{kernel_derivatives[i, n - 1, 2]:0.00}");
+            }
         }
         watch.Stop();
         // for (int i = 0; i < n; i++)

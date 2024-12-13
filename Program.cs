@@ -46,6 +46,8 @@ class Program
         Tests.Tests test = new Tests.Tests();
         Console.WriteLine("Lenght test: {0}",test.TestLenght());
         Console.WriteLine("Kernel test: {0}",test.TestKernel());
+        Console.WriteLine("Kernel derivative test: {0}",test.TestKernelDerivative());
+        Console.WriteLine("Pressure calculation test: {0}",test.TestPressureCalc());
     }
 
     // Avalonia configuration, don't remove; also used by visual designer.

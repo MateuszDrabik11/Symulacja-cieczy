@@ -15,17 +15,15 @@ nine_for dq 2.25
 minus_three_for dq -0.75
 treefifteen dq 315.0
 sixtyfour dq 64.0
+mfourfive dq -45.0
+k dq 2000.0
 segment .text
 	global calc_density_and_pressure
 	global kernel_function
 	global kernel_function_derivative
 	global lenght
 	global kernel
-
-calc_density_and_pressure:	
-	mov rax, [rdi]
-	ret
-
+	global kernel_derivative
 
 ;rdi double* chunk_start
 ;rsi long chunk_size
@@ -249,3 +247,144 @@ set0:	mov r10, 0
 		jmp loopk2
 
 
+
+;rdi - double* lenghts
+;rsi - double* vector_chunk
+;rdx - double* vectors
+;rcx - long chunk_size
+;r8  - long size
+;r9  - double* output
+kernel_derivative:
+	xor r10,r10	;loop1 counter
+	xor r11,r11	;loop2 counter
+	;calculate const
+	movsd xmm0, [rel mfourfive]
+	movsd xmm1, [rel h]
+	movsd xmm2, xmm1
+	mulsd xmm2, xmm1
+	mulsd xmm2, xmm1,
+	mulsd xmm2, xmm2
+	;h^6
+	mulsd xmm2, [rel pi]
+	divsd xmm0,xmm2
+	;xmm0 - t1
+	jmp kds
+loopkd1:	inc r10
+kds:		cmp r10, r8
+			je endk
+			xor r11,r11
+			mov rax, r10
+			shl rax,5
+			vmovupd ymm2, [rsi + rax]	;v1
+loopkd2:	cmp r11, rcx
+			je loopkd1
+			mov rax, r8
+			imul rax, r11
+			add rax, r10
+			shl rax,3
+			movupd xmm1, [rdi + rax]	;lenght
+			movsd xmm5, xmm1
+			cmpsd xmm1, [rel zero_double], 0	;1 if lenght == 0
+			mov rax, r11
+			shl rax,5
+			vmovupd ymm3, [rsi + rax]	;v2
+			vsubpd ymm3, ymm2, ymm3		;v1-v2
+			movsd xmm4, [rel h]
+			subsd xmm4, xmm5
+			mulsd xmm4,xmm4
+			mulsd xmm4,xmm0
+			divsd xmm4, xmm5 ;t1*t2/lenght
+			vbroadcastsd ymm4, xmm4
+			vmulpd ymm3, ymm4
+			mov rax, r8
+			imul rax, r11
+			add rax, r10
+			shl rax,5
+			vbroadcastsd ymm4, [rel zero_double]
+			vbroadcastsd ymm5, xmm1
+			vblendvpd ymm3, ymm3, ymm4, ymm5
+			vmovupd [r9 + rax], ymm3
+			inc r11
+			jmp loopkd2
+
+
+;rdi - double* masses
+;rsi - double* kernels
+;rdx - long particle_index
+;rcx - long number_of_particles
+;r8  - long chunk
+;r9  - double* density
+;stack - double* pressure,	r12
+;xmm0 - double fluid_density
+calc_density_and_pressure:	
+		xor r11,r11	;loop2
+		xor r10,r10	;loop1
+		mov rax, [rbp + 16]		;pressure ptr
+		push r12
+		mov r12,rax
+		jmp cas
+loopc1:	
+		;store density
+		movsd xmm6,xmm7
+		cmpsd xmm7, [rel one_double], 1 ; xmm7 < 1
+		vblendvpd xmm7, xmm6, [rel one_double], xmm7 
+		mov rax, rdx
+		add rax, r10
+		shl rax, 3
+		movsd [r9+rax],xmm7
+		subsd xmm7,xmm0
+		mulsd xmm7, [rel k]
+		movsd [r12+rax],xmm7
+		inc r10
+cas:		
+		cmp r10, r8
+		je endc
+		xor r11,r11
+		xorps xmm7, xmm7	;temp density
+loopc2:
+		cmp r11, rcx
+		je loopc1
+		mov rax, rcx
+		sub rax, r11
+		cmp rax, 4
+		jge sum4
+		;get one
+		movsd xmm1, [rdi + r11 * 8]
+		mov rax, r10
+		add rax, rdx
+		imul rax, rcx
+		add rax, r11
+		shl rax, 3
+		mulsd xmm1, [rsi + rax]
+		addsd xmm7, xmm1
+		inc r11
+		jmp loopc2
+sum4:
+		vmovupd ymm1, [rdi + r11 * 8]	;masses
+		mov rax, r10
+		add rax, rdx
+		imul rax, rcx
+		add rax, r11
+		shl rax, 3
+		vmovupd ymm2, [rsi + rax]		;kernels
+		vmulpd ymm1,ymm2
+		vhaddpd ymm1,ymm1,ymm1
+		vhaddpd ymm1,ymm1,ymm1
+		addsd xmm7,xmm1
+		add r11, 4
+		jmp loopc2
+endc:
+		;restrore r12, ret
+		pop r12
+		ret
+;rdi - double* masses
+;rsi - double* densities
+;rdx - double* kernel_derivatives
+;rcx - double* kernel
+;r8	 - double* velocities
+;r9  - double* positions
+;rbp+16 - long number_of_particles
+;rbp+24 - long index
+;rbp+32 - long chunk
+;rbp+40 - double* accelerations
+calc_forces:
