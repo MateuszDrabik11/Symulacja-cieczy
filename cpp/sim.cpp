@@ -90,9 +90,7 @@ extern "C" void calc_forces(double *masses, double *densities, double *kernel_de
         double pressure[4] = {0, 0, 0, 0};
         for (long j = 0; j < particles; j++)
         {
-            pressure[0] -= masses[j] *
-                           (masses[start_index + i] / (densities[start_index + i] * densities[start_index + i]) +
-                            masses[j] / (densities[j] * densities[j])) *
+            pressure[0] -= masses[j] * (masses[start_index + i] / (densities[start_index + i] * densities[start_index + i]) +masses[j] / (densities[j] * densities[j])) *
                            kernel_derivatives[particles * (start_index + i) + j];
             pressure[1] -= masses[j] *
                            (masses[start_index + i] / (densities[start_index + i] * densities[start_index + i]) +

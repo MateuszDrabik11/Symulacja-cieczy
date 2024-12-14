@@ -40,8 +40,8 @@ namespace Tests
         extern static void kernel_derivativeAsm(ref double lenghts, ref double chunk_start, ref double vectors, long chunk, long size, ref double output);
         [DllImport("../../../libasm.so", EntryPoint = "calc_density_and_pressure")]
         extern static void calc_density_and_pressureAsm(double[] masses, ref double kernels, long p_index, long number_of_particles, long chunk, double[] out_density, double[] out_pressure);
-
-
+        [DllImport("../../../libasm.so", EntryPoint = "calc_forces")]
+        extern static void calc_forcesAsm(double[] masses, double[] densities, ref double kernel_derivatives, ref double kernels, ref double velocities, ref double positions, long particles, long start_index, long chunk, ref double accelerations);
 
         private const int threadCount = 1;
         private const int n = 10;
@@ -333,6 +333,76 @@ namespace Tests
                 }
             }
             avg /= n;
+            Console.WriteLine("min:{0} max:{1} avg:{2}", min, max, avg);
+            return result;
+        }
+        public bool TestForceCalc()
+        {
+            Thread[] threads = new Thread[threadCount];
+            int chunk = n / threadCount;
+            int rest = n % threadCount;
+            int start = 0;
+            for (int i = 0; i < threadCount; i++)
+            {
+                int count = chunk + (i < rest ? 1 : 0);
+                int localStart = start;
+                threads[i] = new Thread(() =>
+                {
+                    calc_forces(masses, densities, ref kernel_derivatives[0, 0, 0], ref kernels[0, 0], ref velocities[0, 0], ref vectors[0, 0], n, localStart, count, ref accelerations[0, 0]);
+                });
+                threads[i].Start();
+                start += count;
+            }
+            for (int i = 0; i < threadCount; i++)
+            {
+                threads[i].Join();
+            }
+            threads = new Thread[threadCount];
+            chunk = n / threadCount;
+            rest = n % threadCount;
+            start = 0;
+            for (int i = 0; i < threadCount; i++)
+            {
+                int count = chunk + (i < rest ? 1 : 0);
+                int localStart = start;
+                threads[i] = new Thread(() =>
+                {
+                    calc_forcesAsm(masses, densities, ref kernel_derivatives[0, 0, 0], ref kernels[0, 0], ref velocities[0, 0], ref vectors[0, 0], n, localStart, count, ref accelerationsAsm[0, 0]);
+                });
+                threads[i].Start();
+                start += count;
+            }
+            for (int i = 0; i < threadCount; i++)
+            {
+                threads[i].Join();
+            }
+            const double tolerance = 0.5;
+            double min = 1.0;
+            double max = 0.0;
+            double avg = 0;
+            bool result = true;
+            for (int i = 0; i < n; i++)
+            {
+                //Console.WriteLine($"[{accelerations[i, 0],10:0.0000000},{accelerations[i, 1],10:0.0000000},{accelerations[i, 2],10:0.0000000}]     |      [{accelerationsAsm[i, 0],10:0.0000000},{accelerationsAsm[i, 1],10:0.0000000},{accelerationsAsm[i, 2],10:0.0000000}]");
+                double x = Math.Abs(accelerations[i, 0] - accelerationsAsm[i, 0]);
+                double y = Math.Abs(accelerations[i, 1] - accelerationsAsm[i, 1]);
+                double z = Math.Abs(accelerations[i, 2] - accelerationsAsm[i, 2]);
+                double aa = (x + y + z) / 3;
+                if (aa < min)
+                {
+                    min = aa;
+                }
+                if (aa > max)
+                {
+                    max = aa;
+                }
+                avg += aa;
+            }
+            avg /= n;
+            if (avg > tolerance)
+            {
+                result = false;
+            }
             Console.WriteLine("min:{0} max:{1} avg:{2}", min, max, avg);
             return result;
         }

@@ -9,16 +9,16 @@ cpp_file = libc.so
 build: $(so_file) $(cpp_file)
 
 $(so_file): $(obj_files)
-	@gcc -g -fPIC -shared -o $(so_file) $(obj_files)
+	@gcc -O3 -g -fPIC -shared -o $(so_file) $(obj_files)
 
 %.o: %.asm
 	@nasm -g -f elf64 -o $@ $<
 
 $(cpp_file): $(cpp_obj)
-	@g++ -g -shared -o $(cpp_file) $(cpp_obj)
+	@g++ -O3 -g -shared -o $(cpp_file) $(cpp_obj)
 
 %.o: %.cpp
-	@g++ -g -fPIC -c -o $@ $<
+	@g++ -O3 -g -fPIC -c -o $@ $<
 
 clean:
 	@rm -f ./asm/*.o ./cpp/*.o *.so

@@ -24,6 +24,7 @@ segment .text
 	global lenght
 	global kernel
 	global kernel_derivative
+	global calc_forces
 
 ;rdi double* chunk_start
 ;rsi long chunk_size
@@ -374,7 +375,7 @@ sum4:
 		add r11, 4
 		jmp loopc2
 endc:
-		;restrore r12, ret
+		;restore r12, ret
 		pop r12
 		ret
 ;rdi - double* masses
@@ -388,3 +389,132 @@ endc:
 ;rbp+32 - long chunk
 ;rbp+40 - double* accelerations
 calc_forces:
+		xor r11,r11	;loop2
+		xor r10,r10	;loop1
+		jmp fos
+loopf1:	
+		;calc acceleration and store
+		mov rax, [rbp+24]
+		add rax, r10
+		shl rax,3
+		movsd xmm0, [rsi + rax] 
+		vbroadcastsd ymm0,xmm0
+		vdivpd ymm6,ymm0
+		vaddpd ymm6,ymm7
+		vpxor ymm7,ymm7
+		vsubpd ymm6,ymm7,ymm6
+		shl rax, 2
+		add rax, [rbp+40]
+		vmovupd [rax], ymm6
+		inc r10
+fos:		
+		cmp r10, [rbp + 32]
+		je endf
+		mov rax, [rbp+24]
+		add rax, r10
+		shl rax, 3
+		movsd xmm0, [rdi + rax]
+		movsd xmm1, [rsi+ rax]
+		divsd xmm0, xmm1
+		divsd xmm0, xmm1				;xmm0 - masses[start + i]/(densities[start + i]^2)
+		vxorpd ymm7, ymm7,ymm7			;pressure
+		vxorpd ymm6,ymm6,ymm6			;viscosity
+		xor r11,r11
+loopf2:
+		cmp r11, [rbp + 16]
+		je loopf3s	;viscosity loop
+
+		movsd xmm1,[rdi + r11*8]	;mass
+		movsd xmm2,[rsi + r11*8]	;density
+		movsd xmm3,xmm1
+		divsd xmm1,xmm2
+		divsd xmm1,xmm2
+		addsd xmm1,xmm0
+		mulsd xmm1,xmm3
+		vbroadcastsd ymm1,xmm1
+		mov rax, [rbp+24]
+		add rax, r10
+		imul rax, [rbp+16]
+		add rax, r11
+		shl rax, 3
+		vmovupd ymm2, [rdx + rax]
+		vmulpd ymm2,ymm1
+		vaddpd ymm7, ymm2
+		inc r11
+		jmp loopf2
+
+loopf3s:
+		;ymm0 - velocities[4 * (start_index + i)]
+		mov rax, [rbp+24]
+		add rax, r10
+		shl rax, 5
+		vmovupd ymm0, [r8 + rax] 
+		xor r11,r11	;loop3
+loopf3:		
+		cmp r11, [rbp + 16]
+		je loopf1
+		mov rax, r11
+		shl rax, 5
+		vmovupd ymm1,[r8 + rax]
+		vsubpd ymm1, ymm0
+		mov rax, [rbp+24]
+		add rax, r10
+		imul rax, [rbp+16]
+		add rax, r11
+		shl rax, 3
+		movsd xmm2, [rcx + rax]
+		vbroadcastsd ymm2, xmm2
+		vmulpd ymm1,ymm2
+		vaddpd ymm6,ymm1 
+		inc r11
+		jmp loopf3
+endf:
+		ret
+
+
+;rdi - double* positions
+;rsi - double* velocities
+;rdx - double* acceleration
+;rcx - long start
+;r8  - long chunk
+;xmm0 - double dt
+time_integration:
+		xor r9,r9
+		vbroadcastsd ymm0, xmm0
+loopti:	
+		cmp r9, r8
+		je endti
+		mov rax, rcx
+		add rax, r9
+		shl rax, 5
+		vmovupd ymm1, [rdx + rax]
+		vmulpd ymm1, ymm0	;ymm1 = dt * a
+		vmovupd ymm2, [rsi + rax]
+		vaddpd ymm2, ymm1
+		vmulpd ymm3, ymm0, ymm2	;ymm3 = dt * v
+		vmovupd [rsi + rax], ymm1
+		vmovupd [rdi + rax], ymm3
+		inc r9
+		jmp loopti
+endti:
+		ret
+;rdi - double* acceleration
+;rsi - long start
+;rdx - long chunk
+;xmm0 - double g
+gravity:
+		xor r8,r8	;loop
+loopg:	
+		cmp r8, rdx
+		je endg
+		mov rax, rsi
+		add rax, r8
+		shl rax, 2
+		add rax, 2
+		shl rax, 3
+		movsd xmm1, [rdi + rax]
+		subsd xmm1, xmm0
+		movsd [rdi + rax], xmm1
+		inc r8
+		jmp loopg
+endg:	ret
