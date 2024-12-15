@@ -11,7 +11,7 @@ class sph_solver
 
     protected double[,] vectors;
     protected double[,] lenghts;
-    protected double[,] kernels;
+    protected double[,] kernels; 
     protected double[,,] kernel_derivatives;
     protected double[,] velocities;
     protected double[,] accelerations;
