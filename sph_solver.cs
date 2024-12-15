@@ -88,7 +88,14 @@ class asm_solver : sph_solver
     //temp
     [DllImport("../../../libc.so", EntryPoint = "boundries")]
     extern static void boundries(ref double positions, ref double velocities, long start_index, long chunk, double x_max, double y_max, double z_max, double bouncines, double dt);
+    public asm_solver() : base()
+    {
+        
+    }
+    public asm_solver(long particles, long threads) : base(particles,threads)
+    {
 
+    }
     public new void Step()
     {
         Thread[] threads = new Thread[Number_of_threads];
@@ -253,7 +260,10 @@ class c_solver : sph_solver
     [DllImport("../../../libc.so", EntryPoint = "boundries")]
     extern static void boundries(ref double positions, ref double velocities, long start_index, long chunk, double x_max, double y_max, double z_max, double bouncines, double dt);
 
+    public c_solver(long particles, long threads) : base(particles,threads)
+    {
 
+    }
 
     public c_solver() : base()
     {

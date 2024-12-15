@@ -317,7 +317,7 @@ loopkd2:	cmp r11, rcx
 ;rcx - long number_of_particles
 ;r8  - long chunk
 ;r9  - double* density
-;stack - double* pressure,	r12
+;stack - double* pressure
 ;xmm0 - double fluid_density
 calc_density_and_pressure:	
 		xor r11,r11	;loop2
@@ -332,10 +332,10 @@ loopc1:
 		add rax, r10
 		shl rax, 3
 		movsd [r9+rax],xmm7
-		subsd xmm7,xmm0
-		mulsd xmm7, [rel k]
-		add rax, [rbp + 16]
-		movsd [rax],xmm7
+		;subsd xmm7,xmm0
+		;mulsd xmm7, [rel k]
+		;add rax, [rbp + 16]
+		;movsd [rax],xmm7
 		inc r10
 cas:		
 		cmp r10, r8

@@ -1,7 +1,9 @@
 ﻿using Avalonia;
 using System;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Threading;
 
 namespace Symulacja_cząsteczek_cieczy;
@@ -48,23 +50,32 @@ class Program
         // Console.WriteLine("Kernel derivative test: {0}",test.TestKernelDerivative());
         // Console.WriteLine("Pressure calculation test: {0}",test.TestPressureCalc());
         // Console.WriteLine("Force calculation test: {0}",test.TestForceCalc());
-        c_solver solver = new c_solver();
+        long particles = 100;
+        long threads = 4;
+        c_solver solver = new c_solver(particles,threads);
         double[,] pos = solver.GetParticlePosition();
         double[] pres = solver.GetPressure();
-        for (long j = 0; j < pos.GetLength(0); j++)
-        {
-            Console.WriteLine($"[{pos[j, 0],10:0.0000000},{pos[j, 1],10:0.0000000},{pos[j, 2],10:0.0000000}]");
-        }
+        Stopwatch s1 = new Stopwatch();
+        s1.Start();
         for (int i = 0; i < 100; i++)
         {
             solver.Step();
-            pos = solver.GetParticlePosition();
-            for (long j = 0; j < pos.GetLength(0); j++)
-            {
-                Console.WriteLine($"[{pos[j, 0],10:0.0000000},{pos[j, 1],10:0.0000000},{pos[j, 2],10:0.0000000}]");
-            }
-            Console.WriteLine("step {0}", i);
         }
+        s1.Stop();
+        asm_solver solver1 = new asm_solver(particles,threads);
+        double[,] pos1 = solver1.GetParticlePosition();
+        double[] pres1 = solver1.GetPressure();
+        Stopwatch s2 = new Stopwatch();
+        s2.Start();
+        for (int i = 0; i < 100; i++)
+        {
+            solver1.Step();
+        }
+        s2.Stop();
+        GC.KeepAlive(pres);
+        GC.KeepAlive(pres1);
+
+        Console.WriteLine($"c:{s1.ElapsedMilliseconds} ms, asm: {s2.ElapsedMilliseconds} ms");
     }
 
     // Avalonia configuration, don't remove; also used by visual designer.
