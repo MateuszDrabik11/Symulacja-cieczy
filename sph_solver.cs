@@ -84,9 +84,150 @@ class asm_solver : sph_solver
     extern static void calc_forces(double[] masses, double[] densities, ref double kernel_derivatives, ref double kernels, ref double velocities, ref double positions, long particles, long start_index, long chunk, ref double accelerations);
     [DllImport("../../../libasm.so", EntryPoint = "gravity")]
     extern static void apply_gravity(ref double accelerations, double g, long start_index, long chunk);
+    [DllImport("../../../libasm.so", EntryPoint = "time_integration")]
+    extern static void time_integration(ref double positions, ref double velocities, ref double accelerations, double dt, long start_index, long chunk);
     //temp
     [DllImport("../../../libc.so", EntryPoint = "boundries")]
     extern static void boundries(ref double positions, ref double velocities, long start_index, long chunk, double x_max, double y_max, double z_max, double bouncines, double dt);
+
+    public new void Step()
+    {
+        Thread[] threads = new Thread[Number_of_threads];
+        long chunk = Number_of_particles / Number_of_threads;
+        long rest = Number_of_particles % Number_of_threads;
+        long start = 0;
+        for (int i = 0; i < Number_of_threads; i++)
+        {
+            long count = chunk + (i < rest ? 1 : 0);
+            long localStart = start;
+            threads[i] = new Thread(() =>
+            {
+                asm_solver.lenght(ref vectors[localStart, 0], count, Number_of_particles, ref vectors[0, 0], ref lenghts[localStart, 0]);
+            });
+            threads[i].Start();
+            start += count;
+        }
+        for (int i = 0; i < Number_of_threads; i++)
+        {
+            threads[i].Join();
+        }
+        //lenght calculation
+        threads = new Thread[Number_of_threads];
+        rest = Number_of_particles % Number_of_threads;
+        start = 0;
+        for (int i = 0; i < Number_of_threads; i++)
+        {
+            long count = chunk + (i < rest ? 1 : 0);
+            long localStart = start;
+            threads[i] = new Thread(() =>
+            {
+                asm_solver.kernel(ref lenghts[localStart, 0], count, Number_of_particles, ref kernels[localStart, 0]);
+                asm_solver.kernel_derivative(ref lenghts[localStart, 0], ref vectors[localStart, 0], ref vectors[0, 0], count, Number_of_particles, ref kernel_derivatives[localStart, 0, 0]);
+
+            });
+            threads[i].Start();
+            start += count;
+        }
+        for (int i = 0; i < Number_of_threads; i++)
+        {
+            threads[i].Join();
+        }
+        //kernel calculation
+        threads = new Thread[Number_of_threads];
+        rest = Number_of_particles % Number_of_threads;
+        start = 0;
+        for (int i = 0; i < Number_of_threads; i++)
+        {
+            long count = chunk + (i < rest ? 1 : 0);
+            long localStart = start;
+            threads[i] = new Thread(() =>
+            {
+                asm_solver.calc_density_and_pressure(masses, ref kernels[0, 0], localStart, Number_of_particles, count, densities, pressures,30);
+            });
+            threads[i].Start();
+            start += count;
+        }
+        for (int i = 0; i < Number_of_threads; i++)
+        {
+            threads[i].Join();
+        }
+        //pressure and density calculation
+        threads = new Thread[Number_of_threads];
+        rest = Number_of_particles % Number_of_threads;
+        start = 0;
+        for (int i = 0; i < Number_of_threads; i++)
+        {
+            long count = chunk + (i < rest ? 1 : 0);
+            long localStart = start;
+            threads[i] = new Thread(() =>
+            {
+                asm_solver.calc_forces(masses, densities, ref kernel_derivatives[0, 0, 0], ref kernels[0, 0], ref velocities[0, 0], ref vectors[0, 0], Number_of_particles, localStart, count, ref accelerations[0, 0]);
+            });
+            threads[i].Start();
+            start += count;
+        }
+        for (int i = 0; i < Number_of_threads; i++)
+        {
+            threads[i].Join();
+        }
+        //force calculation
+        threads = new Thread[Number_of_threads];
+        rest = Number_of_particles % Number_of_threads;
+        start = 0;
+        for (int i = 0; i < Number_of_threads; i++)
+        {
+            long count = chunk + (i < rest ? 1 : 0);
+            long localStart = start;
+            threads[i] = new Thread(() =>
+            {
+                asm_solver.apply_gravity(ref accelerations[0, 0], 10, localStart, count);
+            });
+            threads[i].Start();
+            start += count;
+        }
+        for (int i = 0; i < Number_of_threads; i++)
+        {
+            threads[i].Join();
+        }
+        //gravity influence
+        threads = new Thread[Number_of_threads];
+        rest = Number_of_particles % Number_of_threads;
+        start = 0;
+        for (int i = 0; i < Number_of_threads; i++)
+        {
+            long count = chunk + (i < rest ? 1 : 0);
+            long localStart = start;
+            threads[i] = new Thread(() =>
+            {
+                asm_solver.time_integration(ref vectors[0, 0], ref velocities[0, 0], ref accelerations[0, 0], 0.1, localStart, count);
+            });
+            threads[i].Start();
+            start += count;
+        }
+        for (int i = 0; i < Number_of_threads; i++)
+        {
+            threads[i].Join();
+        }
+        //time integration
+        threads = new Thread[Number_of_threads];
+        rest = Number_of_particles % Number_of_threads;
+        start = 0;
+        for (int i = 0; i < Number_of_threads; i++)
+        {
+            long count = chunk + (i < rest ? 1 : 0);
+            long localStart = start;
+            threads[i] = new Thread(() =>
+            {
+                asm_solver.boundries(ref vectors[0, 0], ref velocities[0, 0], localStart, count, 1, 1, 1, 0.6, 0.1);
+            });
+            threads[i].Start();
+            start += count;
+        }
+        for (int i = 0; i < Number_of_threads; i++)
+        {
+            threads[i].Join();
+        }
+    }
 
 }
 
@@ -255,10 +396,6 @@ class c_solver : sph_solver
         for (int i = 0; i < Number_of_threads; i++)
         {
             threads[i].Join();
-        }
-        for (int i = 0; i < Number_of_particles; i++)
-        {
-            Console.WriteLine($"[{vectors[i, 0],10:0.0000000},{vectors[i, 1],10:0.0000000},{vectors[i, 2],10:0.0000000}]");
         }
     }
 }

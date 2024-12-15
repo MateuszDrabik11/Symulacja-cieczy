@@ -42,29 +42,29 @@ class Program
     {
         BuildAvaloniaApp()
         .StartWithClassicDesktopLifetime(args);
-        // Tests.Tests test = new Tests.Tests();
+        Tests.Tests test = new Tests.Tests();
         // Console.WriteLine("Lenght test: {0}",test.TestLenght());
         // Console.WriteLine("Kernel test: {0}",test.TestKernel());
         // Console.WriteLine("Kernel derivative test: {0}",test.TestKernelDerivative());
-        // Console.WriteLine("Pressure calculation test: {0}",test.TestPressureCalc());
+        Console.WriteLine("Pressure calculation test: {0}",test.TestPressureCalc());
         // Console.WriteLine("Force calculation test: {0}",test.TestForceCalc());
-        c_solver solver = new c_solver();
-        double[,] pos = solver.GetParticlePosition();
-        for (long j = 0; j < pos.GetLength(0); j++)
-        {
-            Console.WriteLine($"[{pos[j, 0],10:0.0000000},{pos[j, 1],10:0.0000000},{pos[j, 2],10:0.0000000}]");
-        }
-        for (int i = 0; i < 100; i++)
-        {
-            solver.Step();
-            //pos = solver.GetParticlePosition();
-            // for (long j = 0; j < pos.GetLength(0); j++)
-            // {
-            //     Console.WriteLine($"[{pos[j, 0],10:0.0000000},{pos[j, 1],10:0.0000000},{pos[j, 2],10:0.0000000}]");
-            // }
-            Console.WriteLine("step {0}", i);
-        }
-        //Lab.densities();
+        // c_solver solver = new c_solver();
+        // double[,] pos = solver.GetParticlePosition();
+        // double[] pres = solver.GetPressure();
+        // for (long j = 0; j < pos.GetLength(0); j++)
+        // {
+        //     Console.WriteLine($"[{pos[j, 0],10:0.0000000},{pos[j, 1],10:0.0000000},{pos[j, 2],10:0.0000000}]");
+        // }
+        // for (int i = 0; i < 100; i++)
+        // {
+        //     solver.Step();
+        //     pos = solver.GetParticlePosition();
+        //     for (long j = 0; j < pos.GetLength(0); j++)
+        //     {
+        //         Console.WriteLine($"[{pos[j, 0],10:0.0000000},{pos[j, 1],10:0.0000000},{pos[j, 2],10:0.0000000}]");
+        //     }
+        //     Console.WriteLine("step {0}", i);
+        // }
     }
 
     // Avalonia configuration, don't remove; also used by visual designer.
