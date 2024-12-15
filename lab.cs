@@ -16,7 +16,7 @@ class Lab
 
     [DllImport("../../../libc.so", EntryPoint = "lenght")]
     extern static void lenght(ref double start, long count, long size, ref double b, ref double output);
-    [DllImport("../../../libc.so", EntryPoint = "calc_density_and_pressure")]
+    [DllImport("../../../libasm.so", EntryPoint = "calc_density_and_pressure")] ///segfault
     extern static void calc_density_and_pressure(double[] masses, ref double kernels, long p_index, long number_of_particles, long chunk, double[] out_density, double[] out_pressure);
     [DllImport("../../../libc.so", EntryPoint = "calc_forces")]
     extern static void calc_forces(double[] masses, double[] densities, ref double kernel_derivatives, ref double kernels, ref double velocities, ref double positions, long particles, long start_index, long chunk, ref double accelerations);
@@ -225,7 +225,7 @@ class Lab
     {
         Random r = new Random();
         int n = 100;
-        int threadCount = 4;
+        int threadCount = 1;
         double[,] vectors = new double[n, 4];
         double[,] lenghts = new double[n, n];
         double[,] kernels = new double[n, n];
@@ -247,7 +247,7 @@ class Lab
         }
 
         Stopwatch watch = Stopwatch.StartNew();
-        for (int j = 0; j < 1000; j++)
+        for (int j = 0; j < 2000; j++)
         {
             lenghtT(vectors, lenghts, n, threadCount);
             //

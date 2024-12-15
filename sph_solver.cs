@@ -38,11 +38,15 @@ class sph_solver
         {
             vectors[i, 0] = r.NextDouble();
             vectors[i, 1] = r.NextDouble();
-            vectors[i, 2] = 1-0.000001;
+            vectors[i, 2] = 1 - 0.000001;
+        }
+        for (int i = 0; i < Number_of_particles; i++)
+        {
+            masses[i] = 3.33;
         }
 
     }
-    public sph_solver() : this(50,4)
+    public sph_solver() : this(50, 4)
     {
 
     }
@@ -51,15 +55,15 @@ class sph_solver
     {
 
     }
-    public double [,] GetParticlePosition()
+    public double[,] GetParticlePosition()
     {
         return vectors;
     }
-    public double [] GetPressure()
+    public double[] GetPressure()
     {
         return pressures;
     }
-    public double [] GetDensity()
+    public double[] GetDensity()
     {
         return densities;
     }
@@ -109,9 +113,11 @@ class c_solver : sph_solver
     [DllImport("../../../libc.so", EntryPoint = "boundries")]
     extern static void boundries(ref double positions, ref double velocities, long start_index, long chunk, double x_max, double y_max, double z_max, double bouncines, double dt);
 
+
+
     public c_solver() : base()
     {
-        
+
     }
     public new void Step()
     {
@@ -125,7 +131,7 @@ class c_solver : sph_solver
             long localStart = start;
             threads[i] = new Thread(() =>
             {
-                lenght(ref vectors[localStart, 0], count, Number_of_particles, ref vectors[0, 0], ref lenghts[localStart, 0]);
+                c_solver.lenght(ref vectors[localStart, 0], count, Number_of_particles, ref vectors[0, 0], ref lenghts[localStart, 0]);
             });
             threads[i].Start();
             start += count;
@@ -144,8 +150,8 @@ class c_solver : sph_solver
             long localStart = start;
             threads[i] = new Thread(() =>
             {
-                kernel(ref lenghts[localStart, 0], count, Number_of_particles, ref kernels[localStart, 0]);
-                kernel_derivative(ref lenghts[localStart, 0], ref vectors[localStart, 0], ref vectors[0, 0], count, Number_of_particles, ref kernel_derivatives[localStart, 0, 0]);
+                c_solver.kernel(ref lenghts[localStart, 0], count, Number_of_particles, ref kernels[localStart, 0]);
+                c_solver.kernel_derivative(ref lenghts[localStart, 0], ref vectors[localStart, 0], ref vectors[0, 0], count, Number_of_particles, ref kernel_derivatives[localStart, 0, 0]);
 
             });
             threads[i].Start();
@@ -165,7 +171,7 @@ class c_solver : sph_solver
             long localStart = start;
             threads[i] = new Thread(() =>
             {
-                calc_density_and_pressure(masses, ref kernels[0, 0], localStart, Number_of_particles, count, densities, pressures);
+                c_solver.calc_density_and_pressure(masses, ref kernels[0, 0], localStart, Number_of_particles, count, densities, pressures);
             });
             threads[i].Start();
             start += count;
@@ -184,7 +190,7 @@ class c_solver : sph_solver
             long localStart = start;
             threads[i] = new Thread(() =>
             {
-                calc_forces(masses, densities, ref kernel_derivatives[0, 0, 0], ref kernels[0, 0], ref velocities[0, 0], ref vectors[0, 0], Number_of_particles, localStart, count, ref accelerations[0, 0]);
+                c_solver.calc_forces(masses, densities, ref kernel_derivatives[0, 0, 0], ref kernels[0, 0], ref velocities[0, 0], ref vectors[0, 0], Number_of_particles, localStart, count, ref accelerations[0, 0]);
             });
             threads[i].Start();
             start += count;
@@ -203,7 +209,7 @@ class c_solver : sph_solver
             long localStart = start;
             threads[i] = new Thread(() =>
             {
-                apply_gravity(ref accelerations[0, 0], 10, localStart, count);
+                c_solver.apply_gravity(ref accelerations[0, 0], 10, localStart, count);
             });
             threads[i].Start();
             start += count;
@@ -222,7 +228,7 @@ class c_solver : sph_solver
             long localStart = start;
             threads[i] = new Thread(() =>
             {
-                time_integration(ref vectors[0, 0], ref velocities[0, 0], ref accelerations[0, 0], 0.1, localStart, count);
+                c_solver.time_integration(ref vectors[0, 0], ref velocities[0, 0], ref accelerations[0, 0], 0.1, localStart, count);
             });
             threads[i].Start();
             start += count;
@@ -241,7 +247,7 @@ class c_solver : sph_solver
             long localStart = start;
             threads[i] = new Thread(() =>
             {
-                boundries(ref vectors[0, 0], ref velocities[0, 0], localStart, count, 1, 1, 1, 0.6, 0.1);
+                c_solver.boundries(ref vectors[0, 0], ref velocities[0, 0], localStart, count, 1, 1, 1, 0.6, 0.1);
             });
             threads[i].Start();
             start += count;
@@ -250,6 +256,9 @@ class c_solver : sph_solver
         {
             threads[i].Join();
         }
-        Console.WriteLine("kurwa");
+        for (int i = 0; i < Number_of_particles; i++)
+        {
+            Console.WriteLine($"[{vectors[i, 0],10:0.0000000},{vectors[i, 1],10:0.0000000},{vectors[i, 2],10:0.0000000}]");
+        }
     }
 }

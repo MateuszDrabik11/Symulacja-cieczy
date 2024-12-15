@@ -57,13 +57,14 @@ class Program
         for (int i = 0; i < 100; i++)
         {
             solver.Step();
-            pos = solver.GetParticlePosition();
-            for (long j = 0; j < pos.GetLength(0); j++)
-            {
-                Console.WriteLine($"[{pos[j, 0],10:0.0000000},{pos[j, 1],10:0.0000000},{pos[j, 2],10:0.0000000}]");
-            }
+            //pos = solver.GetParticlePosition();
+            // for (long j = 0; j < pos.GetLength(0); j++)
+            // {
+            //     Console.WriteLine($"[{pos[j, 0],10:0.0000000},{pos[j, 1],10:0.0000000},{pos[j, 2],10:0.0000000}]");
+            // }
             Console.WriteLine("step {0}", i);
         }
+        //Lab.densities();
     }
 
     // Avalonia configuration, don't remove; also used by visual designer.

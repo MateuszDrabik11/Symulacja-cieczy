@@ -25,6 +25,8 @@ segment .text
 	global kernel
 	global kernel_derivative
 	global calc_forces
+	global gravity
+	global time_integration
 
 ;rdi double* chunk_start
 ;rsi long chunk_size
@@ -320,9 +322,6 @@ loopkd2:	cmp r11, rcx
 calc_density_and_pressure:	
 		xor r11,r11	;loop2
 		xor r10,r10	;loop1
-		mov rax, [rbp + 16]		;pressure ptr
-		push r12
-		mov r12,rax
 		jmp cas
 loopc1:	
 		;store density
@@ -335,7 +334,8 @@ loopc1:
 		movsd [r9+rax],xmm7
 		subsd xmm7,xmm0
 		mulsd xmm7, [rel k]
-		movsd [r12+rax],xmm7
+		add rax, [rbp + 16]
+		movsd [rax],xmm7
 		inc r10
 cas:		
 		cmp r10, r8
@@ -375,8 +375,6 @@ sum4:
 		add r11, 4
 		jmp loopc2
 endc:
-		;restore r12, ret
-		pop r12
 		ret
 ;rdi - double* masses
 ;rsi - double* densities
