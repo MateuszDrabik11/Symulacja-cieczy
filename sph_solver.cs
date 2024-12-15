@@ -1,6 +1,5 @@
 using System;
 using System.Runtime.InteropServices;
-using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 
 namespace Symulacja_cząsteczek_cieczy;
@@ -31,7 +30,7 @@ class sph_solver
         velocities = new double[Number_of_particles, 4];
         accelerations = new double[Number_of_particles, 4];
         masses = new double[Number_of_particles];
-        pressures = new double[Number_of_particles];
+        pressures = new double[Number_of_particles];    //must be locked or used to prevent gc from free
         densities = new double[Number_of_particles];
         Random r = new Random();
         for (int i = 0; i < Number_of_particles; ++i)
