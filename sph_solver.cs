@@ -79,7 +79,7 @@ class asm_solver : sph_solver
     [DllImport("../../../libasm.so", EntryPoint = "kernel_derivative")]
     extern static void kernel_derivative(ref double lenghts, ref double chunk_start, ref double vectors, long chunk, long size, ref double output);
     [DllImport("../../../libasm.so", EntryPoint = "calc_density_and_pressure")]
-    extern static void calc_density_and_pressure(double[] masses, ref double kernels, long p_index, long number_of_particles, long chunk, double[] out_density, double[] out_pressure);
+    extern static void calc_density_and_pressure(double[] masses, ref double kernels, long p_index, long number_of_particles, long chunk, double[] out_density, double[] out_pressure, double fluid_density);
     [DllImport("../../../libasm.so", EntryPoint = "calc_forces")]
     extern static void calc_forces(double[] masses, double[] densities, ref double kernel_derivatives, ref double kernels, ref double velocities, ref double positions, long particles, long start_index, long chunk, ref double accelerations);
     [DllImport("../../../libasm.so", EntryPoint = "gravity")]
@@ -100,7 +100,7 @@ class c_solver : sph_solver
     [DllImport("../../../libc.so", EntryPoint = "lenght")]
     extern static void lenght(ref double start, long count, long size, ref double b, ref double output);
     [DllImport("../../../libc.so", EntryPoint = "calc_density_and_pressure")]
-    extern static void calc_density_and_pressure(double[] masses, ref double kernels, long p_index, long number_of_particles, long chunk, double[] out_density, double[] out_pressure);
+    extern static void calc_density_and_pressure(double[] masses, ref double kernels, long p_index, long number_of_particles, long chunk, double[] out_density, double[] out_pressure, double fluid_density);
     [DllImport("../../../libc.so", EntryPoint = "calc_forces")]
     extern static void calc_forces(double[] masses, double[] densities, ref double kernel_derivatives, ref double kernels, ref double velocities, ref double positions, long particles, long start_index, long chunk, ref double accelerations);
 
@@ -171,7 +171,7 @@ class c_solver : sph_solver
             long localStart = start;
             threads[i] = new Thread(() =>
             {
-                c_solver.calc_density_and_pressure(masses, ref kernels[0, 0], localStart, Number_of_particles, count, densities, pressures);
+                c_solver.calc_density_and_pressure(masses, ref kernels[0, 0], localStart, Number_of_particles, count, densities, pressures,30);
             });
             threads[i].Start();
             start += count;
