@@ -493,6 +493,8 @@ loopti:
 		vaddpd ymm2, ymm1
 		vmulpd ymm3, ymm0, ymm2	;ymm3 = dt * v
 		vmovupd [rsi + rax], ymm1
+		vmovupd ymm4, [rdi + rax]
+		vaddpd ymm3,ymm4
 		vmovupd [rdi + rax], ymm3
 		inc r9
 		jmp loopti
