@@ -27,6 +27,7 @@ segment .text
 	global calc_forces
 	global gravity
 	global time_integration
+	global calc_pressure
 
 ;rdi double* chunk_start
 ;rsi long chunk_size
@@ -518,3 +519,24 @@ loopg:
 		inc r8
 		jmp loopg
 endg:	ret
+
+
+;rdi - double* density
+;rsi - long index
+;rdx - double* pressure
+;rcx - long chunk
+;xmm0 - double fluid_density
+calc_pressure:
+		xor r8, r8
+loopp:	cmp r8, rcx
+		je endp
+		mov rax,rsi
+		add rax,r8
+		shl rax, 3
+		movsd xmm1, [rdx + rax]
+		subsd xmm1,xmm0
+		mulsd xmm1,[rel k]
+		movsd [rdx + rax], xmm1
+		inc r8
+		jmp loopp
+endp:	ret 
