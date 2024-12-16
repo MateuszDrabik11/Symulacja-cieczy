@@ -79,8 +79,10 @@ class asm_solver : sph_solver
     [DllImport(path+"libasm.so", EntryPoint = "kernel_derivative")]
     extern static void kernel_derivative(ref double lenghts, ref double chunk_start, ref double vectors, long chunk, long size, ref double output);
     [DllImport("../../../libasm.so", EntryPoint = "calc_density_and_pressure")]
-    extern static void calc_density_and_pressure(double[] masses, ref double kernels, long p_index, long number_of_particles, long chunk, double[] out_density, double[] out_pressure, double fluid_density);
-    [DllImport(path+"libasm.so", EntryPoint = "calc_forces")]
+    extern static void calc_density(double[] masses, ref double kernels, long p_index, long number_of_particles, long chunk, double[] out_density, double[] out_pressure, double fluid_density);
+    [DllImport("../../../libasm.so", EntryPoint = "calc_pressure")]
+    extern static void calc_pressure(double[] density, long index, double[] pressure,long chunk, double fluid_density);
+    [DllImport("../../../libasm.so", EntryPoint = "calc_forces")]
     extern static void calc_forces(double[] masses, double[] densities, ref double kernel_derivatives, ref double kernels, ref double velocities, ref double positions, long particles, long start_index, long chunk, ref double accelerations);
     [DllImport(path+"libasm.so", EntryPoint = "gravity")]
     extern static void apply_gravity(ref double accelerations, double g, long start_index, long chunk);
@@ -149,7 +151,25 @@ class asm_solver : sph_solver
             long localStart = start;
             threads[i] = new Thread(() =>
             {
-                asm_solver.calc_density_and_pressure(masses, ref kernels[0, 0], localStart, Number_of_particles, count, densities, pressures,30);
+                asm_solver.calc_density(masses, ref kernels[0, 0], localStart, Number_of_particles, count, densities, pressures,30);
+            });
+            threads[i].Start();
+            start += count;
+        }
+        for (int i = 0; i < Number_of_threads; i++)
+        {
+            threads[i].Join();
+        }
+        threads = new Thread[Number_of_threads];
+        rest = Number_of_particles % Number_of_threads;
+        start = 0;
+        for (int i = 0; i < Number_of_threads; i++)
+        {
+            long count = chunk + (i < rest ? 1 : 0);
+            long localStart = start;
+            threads[i] = new Thread(() =>
+            {
+                asm_solver.calc_pressure(densities,localStart,pressures,chunk,30);
             });
             threads[i].Start();
             start += count;
