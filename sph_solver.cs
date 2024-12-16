@@ -7,8 +7,8 @@ namespace Symulacja_cząsteczek_cieczy;
 class sph_solver
 {
     protected const string path = "./";
-    protected long Number_of_particles { get; set; }
-    protected long Number_of_threads { get; set; }
+    public long Number_of_particles { get; set; }
+    public long Number_of_threads { get; set; }
 
     protected double[,] vectors;
     protected double[,] lenghts;
@@ -39,6 +39,12 @@ class sph_solver
             vectors[i, 0] = r.NextDouble();
             vectors[i, 1] = r.NextDouble();
             vectors[i, 2] = 1 - 0.000001;
+        }
+        for (int i = 0; i < Number_of_particles; ++i)
+        {
+            velocities[i, 0] = r.NextDouble();
+            velocities[i, 1] = r.NextDouble();
+            velocities[i, 2] = r.NextDouble();
         }
         for (int i = 0; i < Number_of_particles; i++)
         {
@@ -89,8 +95,8 @@ class asm_solver : sph_solver
     [DllImport(path+"libasm.so", EntryPoint = "time_integration")]
     extern static void time_integration(ref double positions, ref double velocities, ref double accelerations, double dt, long start_index, long chunk);
     //temp
-    [DllImport(path+"libc.so", EntryPoint = "boundries")]
-    extern static void boundries(ref double positions, ref double velocities, long start_index, long chunk, double x_max, double y_max, double z_max, double bouncines, double dt);
+    [DllImport(path+"libasm.so", EntryPoint = "boundries")]
+    extern static void boundries(ref double positions, ref double velocities, long start_index, long chunk, double x_max, double y_max, double z_max, double bouncines);
     public asm_solver() : base()
     {
         
@@ -245,7 +251,7 @@ class asm_solver : sph_solver
             long localStart = start;
             threads[i] = new Thread(() =>
             {
-                asm_solver.boundries(ref vectors[0, 0], ref velocities[0, 0], localStart, count, 1, 1, 1, 0.6, 0.1);
+                asm_solver.boundries(ref vectors[0, 0], ref velocities[0, 0], localStart, count, 1, 1, 1, 0.6);
             });
             threads[i].Start();
             start += count;
@@ -279,7 +285,7 @@ class c_solver : sph_solver
     [DllImport(path+"libc.so", EntryPoint = "gravity")]
     extern static void apply_gravity(ref double accelerations, double g, long start_index, long chunk);
     [DllImport(path+"libc.so", EntryPoint = "boundries")]
-    extern static void boundries(ref double positions, ref double velocities, long start_index, long chunk, double x_max, double y_max, double z_max, double bouncines, double dt);
+    extern static void boundries(ref double positions, ref double velocities, long start_index, long chunk, double x_max, double y_max, double z_max, double bouncines);
 
     public c_solver(long particles, long threads) : base(particles,threads)
     {
@@ -399,7 +405,7 @@ class c_solver : sph_solver
             long localStart = start;
             threads[i] = new Thread(() =>
             {
-                c_solver.time_integration(ref vectors[0, 0], ref velocities[0, 0], ref accelerations[0, 0], 0.1, localStart, count);
+                c_solver.time_integration(ref vectors[0, 0], ref velocities[0, 0], ref accelerations[0, 0], 0.01, localStart, count);
             });
             threads[i].Start();
             start += count;
@@ -418,7 +424,7 @@ class c_solver : sph_solver
             long localStart = start;
             threads[i] = new Thread(() =>
             {
-                c_solver.boundries(ref vectors[0, 0], ref velocities[0, 0], localStart, count, 1, 1, 1, 0.6, 0.1);
+                c_solver.boundries(ref vectors[0, 0], ref velocities[0, 0], localStart, count, 1, 1, 1, 0.6);
             });
             threads[i].Start();
             start += count;

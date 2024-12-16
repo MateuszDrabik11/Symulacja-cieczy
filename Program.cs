@@ -5,6 +5,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Threading;
+using System.Globalization;
 
 namespace Symulacja_cząsteczek_cieczy;
 
@@ -44,30 +45,38 @@ class Program
     {
         BuildAvaloniaApp()
         .StartWithClassicDesktopLifetime(args);
-        // Tests.Tests test = new Tests.Tests();
+        Tests.Tests test = new Tests.Tests();
         // Console.WriteLine("Lenght test: {0}",test.TestLenght());
         // Console.WriteLine("Kernel test: {0}",test.TestKernel());
         // Console.WriteLine("Kernel derivative test: {0}",test.TestKernelDerivative());
         // Console.WriteLine("Pressure calculation test: {0}",test.TestPressureCalc());
         // Console.WriteLine("Force calculation test: {0}",test.TestForceCalc());
-        run(1000,1);
-        run(1000,2);
-        run(1000,4);
-        run(1000,8);
-        run(1000,16);
-        run(1000,32);
+        Console.WriteLine("Boundries test: {0}",test.TestBoundries());
+        //run(1000,1);
+        //run(100,2);
+        //run(1000,4);
+        //run(1000,8);
+        //run(1000,16);
+        //run(1000,32);
         
     }
     public static void run(long particles,long threads)
     {
+        var culture = new CultureInfo("en-US");
         c_solver solver = new c_solver(particles,threads);
         double[,] pos = solver.GetParticlePosition();
         double[] pres = solver.GetPressure();
         Stopwatch s1 = new Stopwatch();
         s1.Start();
-        for (int i = 0; i < 100; i++)
+        Console.WriteLine("frame,x,y,z");
+        for (int i = 0; i < 100000; i++)
         {
+           for (int j = 0; j < solver.Number_of_particles; j++)
+            {
+                Console.WriteLine($"{i},{pos[j,0].ToString(culture)},{pos[j,1].ToString(culture)},{pos[j,2].ToString(culture)}");
+            }
             solver.Step();
+
         }
         s1.Stop();
         asm_solver solver1 = new asm_solver(particles,threads);
@@ -83,8 +92,8 @@ class Program
         GC.KeepAlive(pres);
         GC.KeepAlive(pres1);
 
-        Console.WriteLine($"c:{s1.ElapsedMilliseconds} ms, asm: {s2.ElapsedMilliseconds} ms");
-        Console.WriteLine($"N: {particles}, Threads: {threads}");
+        //Console.WriteLine($"c:{s1.ElapsedMilliseconds} ms, asm: {s2.ElapsedMilliseconds} ms");
+        //Console.WriteLine($"N: {particles}, Threads: {threads}");
     }
     // Avalonia configuration, don't remove; also used by visual designer.
     public static AppBuilder BuildAvaloniaApp()

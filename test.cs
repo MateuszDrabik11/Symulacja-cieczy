@@ -27,7 +27,7 @@ namespace Tests
         [DllImport("../../../libc.so", EntryPoint = "gravity")]
         extern static void apply_gravity(ref double accelerations, double g, long start_index, long chunk);
         [DllImport("../../../libc.so", EntryPoint = "boundries")]
-        extern static void boundries(ref double positions, ref double velocities, long start_index, long chunk, double x_max, double y_max, double z_max, double bouncines, double dt);
+        extern static void boundries(ref double positions, ref double velocities, long start_index, long chunk, double x_max, double y_max, double z_max, double bouncines);
 
         //      asm library
 
@@ -43,7 +43,11 @@ namespace Tests
         [DllImport("../../../libasm.so", EntryPoint = "calc_forces")]
         extern static void calc_forcesAsm(double[] masses, double[] densities, ref double kernel_derivatives, ref double kernels, ref double velocities, ref double positions, long particles, long start_index, long chunk, ref double accelerations);
 
-        private const int threadCount = 1;
+        [DllImport("../../../libasm.so", EntryPoint = "boundries")]
+        extern static void boundriesAsm(ref double positions, ref double velocities, long start_index, long chunk, double x_max, double y_max, double z_max, double bouncines);
+
+
+        private const int threadCount = 4;
         private const int n = 10;
 
         private double[,] vectors;
@@ -404,6 +408,162 @@ namespace Tests
                 result = false;
             }
             Console.WriteLine("min:{0} max:{1} avg:{2}", min, max, avg);
+            return result;
+        }
+        public bool TestBoundries()
+        {
+            bool result = true;
+            double[,] vectorsAsm = new double[n, 4];
+            for (int i = 0; i < n; i++)
+            {
+                velocities[i, 0] = 1;
+                velocities[i, 1] = 1;
+                velocities[i, 2] = 1;
+                velocitiesAsm[i, 0] = 1;
+                velocitiesAsm[i, 1] = 1;
+                velocitiesAsm[i, 2] = 1;
+            }
+            vectors[0, 0] = 1;
+            vectors[0, 1] = 0.1;
+            vectors[0, 2] = 0.1;
+
+            vectors[1, 0] = 1;
+            vectors[1, 1] = 1;
+            vectors[1, 2] = 0.1;
+
+            vectors[2, 0] = 1;
+            vectors[2, 1] = 1;
+            vectors[2, 2] = 1;
+
+            vectors[3, 0] = 0;
+            vectors[3, 1] = 0.1;
+            vectors[3, 2] = 0.1;
+
+            vectors[4, 0] = 0;
+            vectors[4, 1] = 0;
+            vectors[4, 2] = 0.1;
+
+            vectors[5, 0] = 0;
+            vectors[5, 1] = 0;
+            vectors[5, 2] = 0;
+
+            vectors[6, 0] = -1;
+            vectors[6, 1] = 0;
+            vectors[6, 2] = 0;
+
+            vectors[7, 0] = -1;
+            vectors[7, 1] = -1;
+            vectors[7, 2] = 0;
+
+            vectors[8, 0] = -1;
+            vectors[8, 1] = -1;
+            vectors[8, 2] = -1;
+
+            vectors[9, 0] = 0.1;
+            vectors[9, 1] = 0.1;
+            vectors[9, 2] = 0.1;
+
+            vectorsAsm[0, 0] = 1;
+            vectorsAsm[0, 1] = 0.1;
+            vectorsAsm[0, 2] = 0.1;
+
+            vectorsAsm[1, 0] = 1;
+            vectorsAsm[1, 1] = 1;
+            vectorsAsm[1, 2] = 0.1;
+
+            vectorsAsm[2, 0] = 1;
+            vectorsAsm[2, 1] = 1;
+            vectorsAsm[2, 2] = 1;
+
+            vectorsAsm[3, 0] = 0;
+            vectorsAsm[3, 1] = 0.1;
+            vectorsAsm[3, 2] = 0.1;
+
+            vectorsAsm[4, 0] = 0;
+            vectorsAsm[4, 1] = 0;
+            vectorsAsm[4, 2] = 0.1;
+
+            vectorsAsm[5, 0] = 0;
+            vectorsAsm[5, 1] = 0;
+            vectorsAsm[5, 2] = 0;
+
+            vectorsAsm[6, 0] = -1;
+            vectorsAsm[6, 1] = 0;
+            vectorsAsm[6, 2] = 0;
+
+            vectorsAsm[7, 0] = -1;
+            vectorsAsm[7, 1] = -1;
+            vectorsAsm[7, 2] = 0;
+
+            vectorsAsm[8, 0] = -1;
+            vectorsAsm[8, 1] = -1;
+            vectorsAsm[8, 2] = -1;
+
+            vectorsAsm[9, 0] = 0.1;
+            vectorsAsm[9, 1] = 0.1;
+            vectorsAsm[9, 2] = 0.1;
+
+
+            Thread[] threads = new Thread[threadCount];
+            int chunk = n / threadCount;
+            int rest = n % threadCount;
+            int start = 0;
+            for (int i = 0; i < threadCount; i++)
+            {
+                int count = chunk + (i < rest ? 1 : 0);
+                int localStart = start;
+                threads[i] = new Thread(() =>
+                {
+                    boundries(ref vectors[0,0], ref velocities[0,0],localStart,count,1,1,1,0.6);
+                });
+                threads[i].Start();
+                start += count;
+            }
+            for (int i = 0; i < threadCount; i++)
+            {
+                threads[i].Join();
+            }
+            threads = new Thread[threadCount];
+            chunk = n / threadCount;
+            rest = n % threadCount;
+            start = 0;
+            for (int i = 0; i < threadCount; i++)
+            {
+                int count = chunk + (i < rest ? 1 : 0);
+                int localStart = start;
+                threads[i] = new Thread(() =>
+                {
+                    boundries(ref vectorsAsm[0,0], ref velocitiesAsm[0,0],localStart,count,1,1,1,0.6);
+                });
+                threads[i].Start();
+                start += count;
+            }
+            for (int i = 0; i < threadCount; i++)
+            {
+                threads[i].Join();
+            }
+            for (int i = 0; i < n; i++)
+            {
+                for (int j = 0; j < 4; j++)
+                {
+                    if(vectors[i,j]!=vectorsAsm[i,j])
+                    {
+                        result = false;
+                    }
+                    if(velocities[i,j]!=velocitiesAsm[i,j])
+                    {
+                        result = false;
+                    }
+                }
+            }
+            // for (int i = 0; i < n; i++)
+            // {
+            //     Console.WriteLine($"{vectors[i,0]} , {vectors[i,1]} , {vectors[i,2]}    |   {vectorsAsm[i,0]} , {vectorsAsm[i,1]} , {vectorsAsm[i,2]}");
+            // }
+            // for (int i = 0; i < n; i++)
+            // {
+            //     Console.WriteLine($"{velocities[i,0]} , {velocities[i,1]} , {velocities[i,2]}    |   {velocitiesAsm[i,0]} , {velocitiesAsm[i,1]} , {velocitiesAsm[i,2]}");
+            // }
             return result;
         }
     }

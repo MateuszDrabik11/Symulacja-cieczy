@@ -17,6 +17,8 @@ treefifteen dq 315.0
 sixtyfour dq 64.0
 mfourfive dq -45.0
 k dq 2000.0
+eps dq 0.001
+minus_one dq -1.0
 segment .text
 	global calc_density_and_pressure
 	global kernel_function
@@ -28,6 +30,7 @@ segment .text
 	global gravity
 	global time_integration
 	global calc_pressure
+	global boundries
 
 ;rdi double* chunk_start
 ;rsi long chunk_size
@@ -540,3 +543,91 @@ loopp:	cmp r8, rcx
 		inc r8
 		jmp loopp
 endp:	ret 
+
+;rdi - double* positions
+;rsi - double* velocities
+;rdx - long index
+;rcx - long chunk
+;xmm0 - x_max
+;xmm1 - y_max
+;xmm2 - z_max
+;xmm3 - bouncines
+boundries:
+		xor r8, r8 ;loop
+loopb:	cmp r8, rcx
+		je endb
+		mov rax, rdx
+		add rax, r8
+		shl rax, 5
+		movsd xmm5, [rdi + rax]
+		movsd xmm6, xmm5
+		cmpsd xmm5, [rel zero_double], 1 ;less than zero
+		movsd xmm7, xmm5
+		cmpsd xmm6, xmm0, 6 ;more than x_max
+		por xmm5, xmm6	;xmm5 = xmm5 or xmm6
+		movq r9, xmm5
+		test r9, 1
+		jz dont_reverse_x
+		movsd xmm5 ,[rsi + rax]
+		mulsd xmm5, [rel minus_one]
+		mulsd xmm5, xmm3
+		movsd [rsi + rax], xmm5
+
+dont_reverse_x:		movsd xmm5,xmm7
+		movsd xmm6, xmm0
+		subsd xmm6, [rel eps]
+		minsd xmm7, xmm6	;xmm7 = min(xmm7,xmm6)
+		xorps xmm6,xmm6
+		addpd xmm6, [rel eps]
+		maxsd xmm7, xmm6 	;xmm7 = max(xmm7,xmm6)
+		movsd [rdi + rax], xmm7
+
+		movsd xmm5, [rdi + rax+8]
+		movsd xmm6, xmm5
+		cmpsd xmm5, [rel zero_double], 1 ;less than zero
+		movsd xmm7, xmm5
+		cmpsd xmm6, xmm1, 6 ;more than y_max
+		por xmm5, xmm6	;xmm5 = xmm5 or xmm6
+		movq r9, xmm5
+		test r9, 1
+		jz dont_reverse_y
+		movsd xmm5 ,[rsi + rax+8]
+		mulsd xmm5, [rel minus_one]
+		mulsd xmm5, xmm3
+		movsd [rsi + rax+8], xmm5
+
+dont_reverse_y:		movsd xmm5,xmm7
+		movsd xmm6, xmm0
+		subsd xmm6, [rel eps]
+		minsd xmm7, xmm6	;xmm7 = min(xmm7,xmm6)
+		xorps xmm6,xmm6
+		addpd xmm6, [rel eps]
+		maxsd xmm7, xmm6 	;xmm7 = max(xmm7,xmm6)
+		movsd [rdi + rax+8], xmm7
+
+		movsd xmm5, [rdi + rax+16]
+		movsd xmm6, xmm5
+		cmpsd xmm5, [rel zero_double], 1 ;less than zero
+		movsd xmm7, xmm5
+		cmpsd xmm6, xmm2, 6 ;more than z_max
+		por xmm5, xmm6	;xmm5 = xmm5 or xmm6
+		movq r9, xmm5
+		test r9, 1
+		jz dont_reverse_z
+		movsd xmm5 ,[rsi + rax+16]
+		mulsd xmm5, [rel minus_one]
+		mulsd xmm5, xmm3
+		movsd [rsi + rax+16], xmm5
+
+dont_reverse_z:		movsd xmm5,xmm7
+		movsd xmm6, xmm0
+		subsd xmm6, [rel eps]
+		minsd xmm7, xmm6	;xmm7 = min(xmm7,xmm6)
+		xorps xmm6,xmm6
+		addpd xmm6, [rel eps]
+		maxsd xmm7, xmm6 	;xmm7 = max(xmm7,xmm6)
+		movsd [rdi + rax+16], xmm7
+
+		inc r8
+		jmp loopb
+endb: 	ret		

@@ -2,7 +2,7 @@
 #include <stdio.h>
 #define _USE_MATH_DEFINES
 #define k 2000
-double h = 2;
+double h = 2.0;
 
 extern "C" int add(int a, int b)
 {
@@ -142,32 +142,25 @@ extern "C" void gravity(double *accelerations, double g, long start_index, long 
         accelerations[4 * (start_index + i) + 2] += -g;
     }
 }
-extern "C" void boundries(double *positions, double *velocities, long start_index, long chunk, double x_max, double y_max, double z_max, double bouncines, double dt)
+extern "C" void boundries(double *positions, double *velocities, long start_index, long chunk, double x_max, double y_max, double z_max, double bouncines)
 {
     double eps = 0.001;
     for (long i = 0; i < chunk; i++)
     {
-        double temp[3] = {0, 0, 0};
         if (positions[4 * (start_index + i)] < 0 || positions[4 * (start_index + i)] > x_max)
         {
-            temp[0] = -velocities[4 * (start_index + i)] * bouncines;
+            velocities[4 * (start_index + i)] = -velocities[4 * (start_index + i)] * bouncines;
         }
         if (positions[4 * (start_index + i) + 1] < 0 || positions[4 * (start_index + i) + 1] > y_max)
         {
-            temp[1] = -velocities[4 * (start_index + i) + 1] * bouncines;
+            velocities[4 * (start_index + i) + 1] = -velocities[4 * (start_index + i) + 1] * bouncines;
         }
         if (positions[4 * (start_index + i) + 2] < 0 || positions[4 * (start_index + i) + 2] > z_max)
         {
-            temp[2] = -velocities[4 * (start_index + i) + 2] * bouncines;
+            velocities[4 * (start_index + i) + 2] = -velocities[4 * (start_index + i) + 2] * bouncines;
         }
         positions[4 * (start_index + i)] = max(0+eps, min(positions[4 * (start_index + i)], x_max-eps));
         positions[4 * (start_index + i) + 1] = max(0+eps, min(positions[4 * (start_index + i) + 1], y_max-eps));
         positions[4 * (start_index + i) + 2] = max(0+eps, min(positions[4 * (start_index + i) + 2], z_max-eps));
-        positions[4 * (start_index + i)] += dt * temp[0];
-        positions[4 * (start_index + i) + 1] += dt * temp[1];
-        positions[4 * (start_index + i) + 2] += dt * temp[2];
-        velocities[4 * (start_index + i)] = temp[0];
-        velocities[4 * (start_index + i) + 1] = temp[1];
-        velocities[4 * (start_index + i) + 2] = temp[2];
     }
 }
