@@ -50,8 +50,16 @@ class Program
         // Console.WriteLine("Kernel derivative test: {0}",test.TestKernelDerivative());
         // Console.WriteLine("Pressure calculation test: {0}",test.TestPressureCalc());
         // Console.WriteLine("Force calculation test: {0}",test.TestForceCalc());
-        long particles = 100;
-        long threads = 4;
+        run(1000,1);
+        run(1000,2);
+        run(1000,4);
+        run(1000,8);
+        run(1000,16);
+        run(1000,32);
+        
+    }
+    public static void run(long particles,long threads)
+    {
         c_solver solver = new c_solver(particles,threads);
         double[,] pos = solver.GetParticlePosition();
         double[] pres = solver.GetPressure();
@@ -76,8 +84,8 @@ class Program
         GC.KeepAlive(pres1);
 
         Console.WriteLine($"c:{s1.ElapsedMilliseconds} ms, asm: {s2.ElapsedMilliseconds} ms");
+        Console.WriteLine($"N: {particles}, Threads: {threads}");
     }
-
     // Avalonia configuration, don't remove; also used by visual designer.
     public static AppBuilder BuildAvaloniaApp()
         => AppBuilder.Configure<App>()

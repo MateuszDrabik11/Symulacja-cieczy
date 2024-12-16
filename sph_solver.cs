@@ -6,6 +6,7 @@ namespace Symulacja_cząsteczek_cieczy;
 
 class sph_solver
 {
+    protected const string path = "./";
     protected long Number_of_particles { get; set; }
     protected long Number_of_threads { get; set; }
 
@@ -70,23 +71,23 @@ class sph_solver
 
 class asm_solver : sph_solver
 {
-    [DllImport("../../../libasm.so", EntryPoint = "lenght")]
+    [DllImport(path+"libasm.so", EntryPoint = "lenght")]
     extern static void lenght(ref double start, long count, long size, ref double b, ref double output);
 
-    [DllImport("../../../libasm.so", EntryPoint = "kernel")]
+    [DllImport(path+"libasm.so", EntryPoint = "kernel")]
     extern static void kernel(ref double lenghts, long chunk, long size, ref double output);
-    [DllImport("../../../libasm.so", EntryPoint = "kernel_derivative")]
+    [DllImport(path+"libasm.so", EntryPoint = "kernel_derivative")]
     extern static void kernel_derivative(ref double lenghts, ref double chunk_start, ref double vectors, long chunk, long size, ref double output);
     [DllImport("../../../libasm.so", EntryPoint = "calc_density_and_pressure")]
     extern static void calc_density_and_pressure(double[] masses, ref double kernels, long p_index, long number_of_particles, long chunk, double[] out_density, double[] out_pressure, double fluid_density);
-    [DllImport("../../../libasm.so", EntryPoint = "calc_forces")]
+    [DllImport(path+"libasm.so", EntryPoint = "calc_forces")]
     extern static void calc_forces(double[] masses, double[] densities, ref double kernel_derivatives, ref double kernels, ref double velocities, ref double positions, long particles, long start_index, long chunk, ref double accelerations);
-    [DllImport("../../../libasm.so", EntryPoint = "gravity")]
+    [DllImport(path+"libasm.so", EntryPoint = "gravity")]
     extern static void apply_gravity(ref double accelerations, double g, long start_index, long chunk);
-    [DllImport("../../../libasm.so", EntryPoint = "time_integration")]
+    [DllImport(path+"libasm.so", EntryPoint = "time_integration")]
     extern static void time_integration(ref double positions, ref double velocities, ref double accelerations, double dt, long start_index, long chunk);
     //temp
-    [DllImport("../../../libc.so", EntryPoint = "boundries")]
+    [DllImport(path+"libc.so", EntryPoint = "boundries")]
     extern static void boundries(ref double positions, ref double velocities, long start_index, long chunk, double x_max, double y_max, double z_max, double bouncines, double dt);
     public asm_solver() : base()
     {
@@ -239,25 +240,25 @@ class asm_solver : sph_solver
 
 class c_solver : sph_solver
 {
-    [DllImport("../../../libc.so", EntryPoint = "kernel")]
+    [DllImport(path+"libc.so", EntryPoint = "kernel")]
     extern static void kernel(ref double lenghts, long chunk, long size, ref double output);
-    [DllImport("../../../libc.so", EntryPoint = "kernel_derivative")]
+    [DllImport(path+"libc.so", EntryPoint = "kernel_derivative")]
     extern static void kernel_derivative(ref double lenghts, ref double chunk_start, ref double vectors, long chunk, long size, ref double output);
 
-    [DllImport("../../../libc.so", EntryPoint = "lenght")]
+    [DllImport(path+"libc.so", EntryPoint = "lenght")]
     extern static void lenght(ref double start, long count, long size, ref double b, ref double output);
-    [DllImport("../../../libc.so", EntryPoint = "calc_density_and_pressure")]
+    [DllImport(path+"libc.so", EntryPoint = "calc_density_and_pressure")]
     extern static void calc_density_and_pressure(double[] masses, ref double kernels, long p_index, long number_of_particles, long chunk, double[] out_density, double[] out_pressure, double fluid_density);
-    [DllImport("../../../libc.so", EntryPoint = "calc_forces")]
+    [DllImport(path+"libc.so", EntryPoint = "calc_forces")]
     extern static void calc_forces(double[] masses, double[] densities, ref double kernel_derivatives, ref double kernels, ref double velocities, ref double positions, long particles, long start_index, long chunk, ref double accelerations);
 
-    [DllImport("../../../libc.so", EntryPoint = "time_integration")]
+    [DllImport(path+"libc.so", EntryPoint = "time_integration")]
     extern static void time_integration(ref double positions, ref double velocities, ref double accelerations, double dt, long start_index, long chunk);
-    [DllImport("../../../libc.so", EntryPoint = "add_external_force")]
+    [DllImport(path+"libc.so", EntryPoint = "add_external_force")]
     extern static void external_force(ref double accelerations, ref double forces, long start_index, long chunk);
-    [DllImport("../../../libc.so", EntryPoint = "gravity")]
+    [DllImport(path+"libc.so", EntryPoint = "gravity")]
     extern static void apply_gravity(ref double accelerations, double g, long start_index, long chunk);
-    [DllImport("../../../libc.so", EntryPoint = "boundries")]
+    [DllImport(path+"libc.so", EntryPoint = "boundries")]
     extern static void boundries(ref double positions, ref double velocities, long start_index, long chunk, double x_max, double y_max, double z_max, double bouncines, double dt);
 
     public c_solver(long particles, long threads) : base(particles,threads)
