@@ -45,6 +45,8 @@ namespace Tests
 
         [DllImport("../../../libasm.so", EntryPoint = "boundries")]
         extern static void boundriesAsm(ref double positions, ref double velocities, long start_index, long chunk, double x_max, double y_max, double z_max, double bouncines);
+        [DllImport("../../../libasm.so", EntryPoint = "add_external_force")]
+        extern static void external_forceAsm(ref double accelerations, ref double forces, long start_index, long chunk);
 
 
         private const int threadCount = 4;
@@ -514,7 +516,7 @@ namespace Tests
                 int localStart = start;
                 threads[i] = new Thread(() =>
                 {
-                    boundries(ref vectors[0,0], ref velocities[0,0],localStart,count,1,1,1,0.6);
+                    boundries(ref vectors[0, 0], ref velocities[0, 0], localStart, count, 1, 1, 1, 0.6);
                 });
                 threads[i].Start();
                 start += count;
@@ -533,7 +535,7 @@ namespace Tests
                 int localStart = start;
                 threads[i] = new Thread(() =>
                 {
-                    boundries(ref vectorsAsm[0,0], ref velocitiesAsm[0,0],localStart,count,1,1,1,0.6);
+                    boundriesAsm(ref vectorsAsm[0, 0], ref velocitiesAsm[0, 0], localStart, count, 1, 1, 1, 0.6);
                 });
                 threads[i].Start();
                 start += count;
@@ -546,11 +548,11 @@ namespace Tests
             {
                 for (int j = 0; j < 4; j++)
                 {
-                    if(vectors[i,j]!=vectorsAsm[i,j])
+                    if (vectors[i, j] != vectorsAsm[i, j])
                     {
                         result = false;
                     }
-                    if(velocities[i,j]!=velocitiesAsm[i,j])
+                    if (velocities[i, j] != velocitiesAsm[i, j])
                     {
                         result = false;
                     }
@@ -558,13 +560,91 @@ namespace Tests
             }
             // for (int i = 0; i < n; i++)
             // {
-            //     Console.WriteLine($"{vectors[i,0]} , {vectors[i,1]} , {vectors[i,2]}    |   {vectorsAsm[i,0]} , {vectorsAsm[i,1]} , {vectorsAsm[i,2]}");
+            //     Console.WriteLine($"{vectors[i, 0]} , {vectors[i, 1]} , {vectors[i, 2]}    |   {vectorsAsm[i, 0]} , {vectorsAsm[i, 1]} , {vectorsAsm[i, 2]}");
             // }
             // for (int i = 0; i < n; i++)
             // {
-            //     Console.WriteLine($"{velocities[i,0]} , {velocities[i,1]} , {velocities[i,2]}    |   {velocitiesAsm[i,0]} , {velocitiesAsm[i,1]} , {velocitiesAsm[i,2]}");
+            //     Console.WriteLine($"{velocities[i, 0]} , {velocities[i, 1]} , {velocities[i, 2]}    |   {velocitiesAsm[i, 0]} , {velocitiesAsm[i, 1]} , {velocitiesAsm[i, 2]}");
             // }
             return result;
+        }
+        public bool TestExternalForce()
+        {
+            Random r = new Random();
+            double[,] f = new double[n, 4];
+            for (int i = 0; i < n; i++)
+            {
+                f[i, 0] = r.NextDouble();
+                f[i, 1] = r.NextDouble();
+                f[i, 2] = r.NextDouble();
+            }
+            Thread[] threads = new Thread[threadCount];
+            int chunk = n / threadCount;
+            int rest = n % threadCount;
+            int start = 0;
+            for (int i = 0; i < threadCount; i++)
+            {
+                int count = chunk + (i < rest ? 1 : 0);
+                int localStart = start;
+                threads[i] = new Thread(() =>
+                {
+                    external_force(ref accelerations[0, 0], ref f[0, 0], localStart, count);
+                });
+                threads[i].Start();
+                start += count;
+            }
+            for (int i = 0; i < threadCount; i++)
+            {
+                threads[i].Join();
+            }
+            threads = new Thread[threadCount];
+            chunk = n / threadCount;
+            rest = n % threadCount;
+            start = 0;
+            for (int i = 0; i < threadCount; i++)
+            {
+                int count = chunk + (i < rest ? 1 : 0);
+                int localStart = start;
+                threads[i] = new Thread(() =>
+                {
+                    external_forceAsm(ref accelerationsAsm[0, 0], ref f[0, 0], localStart, count);
+                });
+                threads[i].Start();
+                start += count;
+            }
+            for (int i = 0; i < threadCount; i++)
+            {
+                threads[i].Join();
+            }
+            const double tolerance = 0.2;
+            double min = 1.0;
+            double max = 0.0;
+            double avg = 0;
+            bool result = true;
+            for (int i = 0; i < n; i++)
+            {
+                double x = Math.Abs(accelerations[i, 0] - accelerationsAsm[i, 0]);
+                double y = Math.Abs(accelerations[i, 1] - accelerationsAsm[i, 1]);
+                double z = Math.Abs(accelerations[i, 2] - accelerationsAsm[i, 2]);
+                double aa = (x + y + z) / 3;
+                if (aa < min)
+                {
+                    min = aa;
+                }
+                if (aa > max)
+                {
+                    max = aa;
+                }
+                avg += aa;
+            }
+            avg /= n;
+            if (avg > tolerance)
+            {
+                result = false;
+            }
+            Console.WriteLine("min:{0} max:{1} avg:{2}", min, max, avg);
+            return result;
+
         }
     }
 }

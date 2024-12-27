@@ -46,14 +46,15 @@ class Program
         BuildAvaloniaApp()
         .StartWithClassicDesktopLifetime(args);
         Tests.Tests test = new Tests.Tests();
-        // Console.WriteLine("Lenght test: {0}",test.TestLenght());
-        // Console.WriteLine("Kernel test: {0}",test.TestKernel());
-        // Console.WriteLine("Kernel derivative test: {0}",test.TestKernelDerivative());
-        // Console.WriteLine("Pressure calculation test: {0}",test.TestPressureCalc());
-        // Console.WriteLine("Force calculation test: {0}",test.TestForceCalc());
+        Console.WriteLine("Lenght test: {0}",test.TestLenght());
+        Console.WriteLine("Kernel test: {0}",test.TestKernel());
+        Console.WriteLine("Kernel derivative test: {0}",test.TestKernelDerivative());
+        Console.WriteLine("Pressure calculation test: {0}",test.TestPressureCalc());
+        Console.WriteLine("Force calculation test: {0}",test.TestForceCalc());
         Console.WriteLine("Boundries test: {0}",test.TestBoundries());
+        Console.WriteLine("External force test: {0}",test.TestExternalForce());
         //run(1000,1);
-        //run(100,2);
+        //run(1000,2);
         //run(1000,4);
         //run(1000,8);
         //run(1000,16);
@@ -68,16 +69,16 @@ class Program
         double[] pres = solver.GetPressure();
         Stopwatch s1 = new Stopwatch();
         s1.Start();
-        Console.WriteLine("frame,x,y,z");
-        for (int i = 0; i < 100000; i++)
-        {
-           for (int j = 0; j < solver.Number_of_particles; j++)
-            {
-                Console.WriteLine($"{i},{pos[j,0].ToString(culture)},{pos[j,1].ToString(culture)},{pos[j,2].ToString(culture)}");
-            }
-            solver.Step();
+        // Console.WriteLine("frame,x,y,z");
+        // for (int i = 0; i < 1000; i++)
+        // {
+        //    for (int j = 0; j < solver.Number_of_particles; j++)
+        //     {
+        //         Console.WriteLine($"{i},{pos[j,0].ToString(culture)},{pos[j,1].ToString(culture)},{pos[j,2].ToString(culture)}");
+        //     }
+        //     solver.Step();
 
-        }
+        // }
         s1.Stop();
         asm_solver solver1 = new asm_solver(particles,threads);
         double[,] pos1 = solver1.GetParticlePosition();
@@ -92,8 +93,8 @@ class Program
         GC.KeepAlive(pres);
         GC.KeepAlive(pres1);
 
-        //Console.WriteLine($"c:{s1.ElapsedMilliseconds} ms, asm: {s2.ElapsedMilliseconds} ms");
-        //Console.WriteLine($"N: {particles}, Threads: {threads}");
+        Console.WriteLine($"c:{s1.ElapsedMilliseconds} ms, asm: {s2.ElapsedMilliseconds} ms");
+        Console.WriteLine($"N: {particles}, Threads: {threads}");
     }
     // Avalonia configuration, don't remove; also used by visual designer.
     public static AppBuilder BuildAvaloniaApp()

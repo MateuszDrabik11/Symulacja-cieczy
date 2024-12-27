@@ -6,7 +6,7 @@ namespace Symulacja_cząsteczek_cieczy;
 
 class sph_solver
 {
-    protected const string path = "./";
+    protected const string path = "/home/drabcio/coding/Symulacja-cieczy/";
     public long Number_of_particles { get; set; }
     public long Number_of_threads { get; set; }
 

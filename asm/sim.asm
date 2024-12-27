@@ -31,6 +31,7 @@ segment .text
 	global time_integration
 	global calc_pressure
 	global boundries
+	global add_external_force
 
 ;rdi double* chunk_start
 ;rsi long chunk_size
@@ -554,80 +555,105 @@ endp:	ret
 ;xmm3 - bouncines
 boundries:
 		xor r8, r8 ;loop
-loopb:	cmp r8, rcx
-		je endb
+loopbb:	cmp r8, rcx
+		je endbb
 		mov rax, rdx
 		add rax, r8
 		shl rax, 5
-		movsd xmm5, [rdi + rax]
+		movsd xmm5, [rdi + rax]       ; Load positions[4 * index]
 		movsd xmm6, xmm5
-		cmpsd xmm5, [rel zero_double], 1 ;less than zero
+		cmpsd xmm5, [rel zero_double], 1  ; Compare with 0 (less than 0)
 		movsd xmm7, xmm5
-		cmpsd xmm6, xmm0, 6 ;more than x_max
-		por xmm5, xmm6	;xmm5 = xmm5 or xmm6
+		cmpsd xmm6, xmm0, 6           ; Compare with x_max (greater than x_max)
+		por xmm5, xmm6                ; xmm5 = xmm5 OR xmm6
 		movq r9, xmm5
-		test r9, 1
+		cmp r9, 0
 		jz dont_reverse_x
-		movsd xmm5 ,[rsi + rax]
-		mulsd xmm5, [rel minus_one]
-		mulsd xmm5, xmm3
-		movsd [rsi + rax], xmm5
 
-dont_reverse_x:		movsd xmm5,xmm7
-		movsd xmm6, xmm0
-		subsd xmm6, [rel eps]
-		minsd xmm7, xmm6	;xmm7 = min(xmm7,xmm6)
-		xorps xmm6,xmm6
-		addpd xmm6, [rel eps]
-		maxsd xmm7, xmm6 	;xmm7 = max(xmm7,xmm6)
-		movsd [rdi + rax], xmm7
+		; Reverse velocity if out of bounds
+		movsd xmm5, [rsi + rax]       ; Load velocities[4 * index]
+		mulsd xmm5, [rel minus_one]   ; Multiply by -1
+		mulsd xmm5, xmm3              ; Apply bounciness
+		movsd [rsi + rax], xmm5       ; Store back
 
-		movsd xmm5, [rdi + rax+8]
+		dont_reverse_x:
+		; Clamp positions
+		movsd xmm6, xmm0              ; xmm6 = x_max
+		subsd xmm6, [rel eps]         ; xmm6 = x_max - eps
+		minsd xmm6, [rdi + rax]       ; xmm6 = min(position, x_max - eps)
+		movsd xmm7, [rel eps]         ; xmm7 = eps
+		maxsd xmm6, xmm7              ; xmm6 = max(position, eps)
+		movsd [rdi + rax], xmm6       ; Store clamped value
+
+
+		movsd xmm5, [rdi + rax + 8]
 		movsd xmm6, xmm5
-		cmpsd xmm5, [rel zero_double], 1 ;less than zero
+		cmpsd xmm5, [rel zero_double], 1
 		movsd xmm7, xmm5
-		cmpsd xmm6, xmm1, 6 ;more than y_max
-		por xmm5, xmm6	;xmm5 = xmm5 or xmm6
+		cmpsd xmm6, xmm1, 6
+		por xmm5, xmm6
 		movq r9, xmm5
-		test r9, 1
+		cmp r9, 0
 		jz dont_reverse_y
-		movsd xmm5 ,[rsi + rax+8]
+
+		movsd xmm5, [rsi + rax + 8]
 		mulsd xmm5, [rel minus_one]
 		mulsd xmm5, xmm3
-		movsd [rsi + rax+8], xmm5
+		movsd [rsi + rax + 8], xmm5
 
-dont_reverse_y:		movsd xmm5,xmm7
-		movsd xmm6, xmm0
+		dont_reverse_y:
+		movsd xmm6, xmm1
 		subsd xmm6, [rel eps]
-		minsd xmm7, xmm6	;xmm7 = min(xmm7,xmm6)
-		xorps xmm6,xmm6
-		addpd xmm6, [rel eps]
-		maxsd xmm7, xmm6 	;xmm7 = max(xmm7,xmm6)
-		movsd [rdi + rax+8], xmm7
+		minsd xmm6, [rdi + rax + 8]
+		movsd xmm7, [rel eps]
+		maxsd xmm6, xmm7
+		movsd [rdi + rax + 8], xmm6
 
-		movsd xmm5, [rdi + rax+16]
+
+		movsd xmm5, [rdi + rax + 16]
 		movsd xmm6, xmm5
-		cmpsd xmm5, [rel zero_double], 1 ;less than zero
+		cmpsd xmm5, [rel zero_double], 1
 		movsd xmm7, xmm5
-		cmpsd xmm6, xmm2, 6 ;more than z_max
-		por xmm5, xmm6	;xmm5 = xmm5 or xmm6
+		cmpsd xmm6, xmm2, 6
+		por xmm5, xmm6
 		movq r9, xmm5
-		test r9, 1
+		cmp r9, 0
 		jz dont_reverse_z
-		movsd xmm5 ,[rsi + rax+16]
+
+		movsd xmm5, [rsi + rax + 16]
 		mulsd xmm5, [rel minus_one]
 		mulsd xmm5, xmm3
-		movsd [rsi + rax+16], xmm5
+		movsd [rsi + rax + 16], xmm5
 
-dont_reverse_z:		movsd xmm5,xmm7
-		movsd xmm6, xmm0
+		dont_reverse_z:
+		movsd xmm6, xmm2
 		subsd xmm6, [rel eps]
-		minsd xmm7, xmm6	;xmm7 = min(xmm7,xmm6)
-		xorps xmm6,xmm6
-		addpd xmm6, [rel eps]
-		maxsd xmm7, xmm6 	;xmm7 = max(xmm7,xmm6)
-		movsd [rdi + rax+16], xmm7
+		minsd xmm6, [rdi + rax + 16]
+		movsd xmm7, [rel eps]
+		maxsd xmm6, xmm7
+		movsd [rdi + rax + 16], xmm6
+
 
 		inc r8
-		jmp loopb
-endb: 	ret		
+		jmp loopbb
+endbb: 	ret
+
+;rdi - double* acceleration
+;rsi - double* forces
+;rdx - long index
+;rcx - long chunk
+add_external_force:
+	xor r8,r8
+lp:	cmp r8, rcx
+	je retfe
+	mov rax, rdx
+	add rax, r8
+	shl rax, 5
+	vmovupd ymm0, [rdi + rax]
+	vmovupd ymm1, [rsi + rax]
+	vaddpd ymm0,ymm1
+	vmovupd [rdi + rax], ymm0
+	inc r8
+	jmp lp
+retfe:
+	ret
